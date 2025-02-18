@@ -6,10 +6,6 @@ A userscript that enhances Steam store pages by displaying price comparisons fro
 
 ![GG.deals Steam Companion](https://gg.deals/favicon.ico)
 
-## Example
-
-![Screenshot Example](images/Screen1.webp)
-
 ## Installation
 
 1. First, install a userscript manager:
@@ -17,14 +13,19 @@ A userscript that enhances Steam store pages by displaying price comparisons fro
    - [Violentmonkey](https://violentmonkey.github.io/)
    - [Greasemonkey](https://www.greasespot.net/)
 
-2. Click this link to install the script:
-   [Install GG.deals Steam Companion](https://raw.githubusercontent.com/Crimsab/ggdeals-steam-companion/main/userscript.user.js)
+2. Click this link to install the script: 
+**[➡️ INSTALL GG.DEALS STEAM COMPANION ⬅️](https://raw.githubusercontent.com/Crimsab/ggdeals-steam-companion/main/userscript.user.js)**
 
    If the automatic installation doesn't work:
    - Open your userscript manager's dashboard
    - Create a new script
    - Copy and paste the contents from [this link](https://raw.githubusercontent.com/Crimsab/ggdeals-steam-companion/main/userscript.user.js)
    - Save the script
+
+## Example
+
+![Screenshot Example](images/Screen1.webp)
+
 
 ## Features
 
