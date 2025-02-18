@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name         GG.deals Steam Companion
 // @namespace    http://tampermonkey.net/
-// @version      1.1
+// @version      1.2
 // @description  Shows lowest price from gg.deals on Steam game pages
 // @author       Crimsab
+// @license      GPL-3.0-or-later
 // @match        https://store.steampowered.com/app/*
 // @icon         https://gg.deals/favicon.ico
 // @grant        GM_xmlhttpRequest

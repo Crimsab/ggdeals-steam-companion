@@ -2,6 +2,8 @@
 
 A userscript that enhances Steam store pages by displaying price comparisons from GG.deals directly on the game page.
 
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-24292e.svg?style=flat-square&logo=github)](https://github.com/Crimsab/ggdeals-steam-companion) [![Greasy Fork](https://img.shields.io/badge/Greasy%20Fork-Install-670000.svg?style=flat-square&logo=tampermonkey)](https://greasyfork.org/it/scripts/527356-gg-deals-steam-companion)
+
 > **Disclaimer**: This is an unofficial userscript and is not affiliated with, endorsed by, or connected to GG.deals or Steam in any way. This script simply provides a convenient interface to publicly available data from GG.deals.
 
 ![GG.deals Steam Companion](https://gg.deals/favicon.ico)
@@ -25,7 +27,6 @@ A userscript that enhances Steam store pages by displaying price comparisons fro
 ## Example
 
 ![Screenshot Example](images/Screen1.webp)
-
 
 ## Features
 
