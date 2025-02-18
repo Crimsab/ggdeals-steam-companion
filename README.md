@@ -6,6 +6,10 @@ A userscript that enhances Steam store pages by displaying price comparisons fro
 
 ![GG.deals Steam Companion](https://gg.deals/favicon.ico)
 
+## Example
+
+![Screenshot Example](images/Screen1.webp)
+
 ## Installation
 
 1. First, install a userscript manager:
@@ -31,6 +35,7 @@ A userscript that enhances Steam store pages by displaying price comparisons fro
 - Remembers your display preferences
 - Automatic price highlighting for best deals
 - Responsive design that works on all screen sizes
+- Cache system with 24-hour duration and manual refresh option
 
 ## Usage
 
