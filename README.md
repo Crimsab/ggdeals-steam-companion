@@ -24,9 +24,16 @@ A userscript that enhances Steam store pages by displaying price comparisons fro
    - Copy and paste the contents from [this link](https://raw.githubusercontent.com/Crimsab/ggdeals-steam-companion/main/userscript.user.js)
    - Save the script
 
-## Example
+## Examples
 
-![Screenshot Example](images/Screen1.webp)
+### Full View
+![Full View Screenshot](images/Screen1.webp)
+
+### Compact View
+![Compact View Screenshot](images/Screen2.webp)
+
+### Bundle/Package View
+![Bundle View Screenshot](images/Screen3.webp)
 
 ## Features
 
