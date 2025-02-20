@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GG.deals Steam Companion
 // @namespace    http://tampermonkey.net/
-// @version      1.5
+// @version      1.5.1
 // @description  Shows lowest price from gg.deals on Steam game pages
 // @author       Crimsab
 // @license      GPL-3.0-or-later
@@ -61,11 +61,12 @@
             gap: 20px;
             flex: 1;
             min-width: 0;
-            overflow: hidden;
+            overflow: visible;
         }
         .gg-compact-price-item {
             display: flex;
             align-items: center;
+            position: relative;
             gap: 8px;
             min-width: 0;
             flex-shrink: 1;
@@ -143,6 +144,33 @@
             opacity: 1;
         }
         .gg-tooltip-text {
+            visibility: hidden;
+            opacity: 0;
+            background-color: #16202d;
+            color: #fff;
+            text-align: center;
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid #67c1f530;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            transition: opacity 0.2s;
+            font-size: 12px;
+        }
+        /* New historical tooltip styles */
+        .gg-historical-tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .gg-historical-tooltip:hover .gg-historical-tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        .gg-historical-tooltip-text {
             visibility: hidden;
             opacity: 0;
             background-color: #16202d;
@@ -537,18 +565,18 @@
                       !toggleStates.official ? "display:none" : ""
                     }">
                         <span>Official:</span>
-                        <span class="gg-tooltip">
+                        <span class="gg-historical-tooltip">
                             <span class="gg-price-value" id="gg-compact-official-price">Loading...</span>
-                            <span class="gg-tooltip-text" id="gg-compact-official-historical"></span>
+                            <span class="gg-historical-tooltip-text" id="gg-compact-official-historical"></span>
                         </span>
                     </div>
                     <div class="gg-compact-price-item" id="gg-compact-keyshop" style="${
                       !toggleStates.keyshop ? "display:none" : ""
                     }">
                         <span>Keyshop:</span>
-                        <span class="gg-tooltip">
+                        <span class="gg-historical-tooltip">
                             <span class="gg-price-value" id="gg-compact-keyshop-price">Loading...</span>
-                            <span class="gg-tooltip-text" id="gg-compact-keyshop-historical"></span>
+                            <span class="gg-historical-tooltip-text" id="gg-compact-keyshop-historical"></span>
                         </span>
                     </div>
                 </div>
@@ -1140,7 +1168,7 @@
             el.textContent = 'Not found';
         });
 
-        const historicalElements = container.querySelectorAll('.gg-tooltip-text, .gg-price-value.historical');
+        const historicalElements = container.querySelectorAll('.gg-historical-tooltip-text, .gg-price-value.historical');
         historicalElements.forEach(el => {
             el.textContent = '';
         });
@@ -1163,16 +1191,16 @@
             <div class="gg-compact-prices">
                 <div class="gg-compact-price-item gg-compact-official" style="${!toggleStates.official ? "display:none" : ""}">
                     <span>Official:</span>
-                    <span class="gg-tooltip">
+                    <span class="gg-historical-tooltip">
                         <span class="gg-price-value gg-compact-official-price">Loading...</span>
-                        <span class="gg-tooltip-text gg-compact-official-historical"></span>
+                        <span class="gg-historical-tooltip-text gg-compact-official-historical"></span>
                     </span>
                 </div>
                 <div class="gg-compact-price-item gg-compact-keyshop" style="${!toggleStates.keyshop ? "display:none" : ""}">
                     <span>Keyshop:</span>
-                    <span class="gg-tooltip">
+                    <span class="gg-historical-tooltip">
                         <span class="gg-price-value gg-compact-keyshop-price">Loading...</span>
-                        <span class="gg-tooltip-text gg-compact-keyshop-historical"></span>
+                        <span class="gg-historical-tooltip-text gg-compact-keyshop-historical"></span>
                     </span>
                 </div>
             </div>
