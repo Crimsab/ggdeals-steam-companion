@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GG.deals Steam Companion
 // @namespace    http://tampermonkey.net/
-// @version      1.4
+// @version      1.5
 // @description  Shows lowest price from gg.deals on Steam game pages
 // @author       Crimsab
 // @license      GPL-3.0-or-later
@@ -49,6 +49,8 @@
             align-items: center;
             gap: 15px;
             padding: 5px;
+            flex-wrap: nowrap;
+            min-width: 0;
         }
         .gg-deals-container.compact .gg-compact-row {
             display: flex;
@@ -58,11 +60,15 @@
             align-items: center;
             gap: 20px;
             flex: 1;
+            min-width: 0;
+            overflow: hidden;
         }
         .gg-compact-price-item {
             display: flex;
             align-items: center;
             gap: 8px;
+            min-width: 0;
+            flex-shrink: 1;
         }
         .gg-compact-price-item .gg-price-value {
             font-size: 18px;
@@ -126,6 +132,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-shrink: 0;
         }
         .gg-tooltip {
             position: relative;
@@ -369,7 +376,12 @@
             fill: currentColor;
         }
         .gg-refresh {
-            composes: gg-icon-button;
+            padding: 5px 8px;
+            display: flex;
+            align-items: center;
+            min-width: max-content;
+            flex-shrink: 0;
+            position: relative;
         }
         .gg-refresh svg {
             transition: transform 0.5s ease;
@@ -379,16 +391,12 @@
         .gg-refresh.loading svg {
             transform: rotate(360deg);
         }
-        .gg-settings-icon {
-            composes: gg-icon-button;
-        }
-        .gg-settings-icon svg {
-            fill: currentColor;
-        }
         .gg-refresh-text {
-            color: #8f98a0;
-            font-size: 10px;
-            margin-left: 4px;
+            display: none;
+        }
+        .gg-refresh:hover .gg-tooltip-text {
+            visibility: visible;
+            opacity: 1;
         }
 
         .github-icon {
@@ -429,15 +437,15 @@
         .gg-view-offers:hover {
             transform: translateY(-1px);
         }
-        .gg-refresh {
-            padding: 5px 8px;
-        }
-        .gg-refresh:hover {
-            padding: 5px 8px;
-        }
         .gg-price-value {
             display: inline-block;
             min-width: 80px;
+        }
+        .gg-deals-container.compact .gg-view-offers {
+            width: auto;
+            min-width: 90px;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
     `);
 
@@ -512,8 +520,9 @@
 
   function createPriceContainer() {
     const container = document.createElement("div");
-    container.className =
-      "gg-deals-container" + (toggleStates.compact ? " compact" : "");
+    // Get the saved compact state
+    const isCompact = GM_getValue("compactView", false);
+    container.className = "gg-deals-container" + (isCompact ? " compact" : "");
     container.innerHTML = `
             <div class="gg-header">
                 <div class="gg-title">
@@ -548,7 +557,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
-                        <span class="gg-refresh-text"></span>
+                        <span class="gg-tooltip-text">Click to refresh prices</span>
                     </button>
                     <div class="gg-settings-dropdown">
                         <div class="gg-icon-button gg-settings-icon">
@@ -629,7 +638,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    <span class="gg-refresh-text"></span>
+                    <span class="gg-tooltip-text">Click to refresh prices</span>
                 </button>
                 <a href="#" target="_blank" class="gg-view-offers">View Offers</a>
             </div>
@@ -653,10 +662,11 @@
 
     function updateToggleState(type, checked) {
       toggleStates[type] = checked;
-      GM_setValue(
-        `show${type.charAt(0).toUpperCase() + type.slice(1)}`,
-        checked
-      );
+      if (type === "compact") {
+        GM_setValue("compactView", checked);
+      } else {
+        GM_setValue(`show${type.charAt(0).toUpperCase() + type.slice(1)}`, checked);
+      }
 
       if (type === "official" || type === "keyshop") {
         container.querySelector(`#gg-compact-${type}`).style.display = checked
@@ -666,21 +676,25 @@
           .querySelector(`#gg-${type}-section`)
           .classList.toggle("hidden", !checked);
       } else if (type === "compact") {
-        container.classList.toggle("compact", checked);
+        // Update all containers on the page, preserving sub-display containers
+        document.querySelectorAll('.gg-deals-container').forEach(cont => {
+          // Skip sub-display containers if we're switching to full view
+          if (!checked && cont.classList.contains('bundle-sub-display')) {
+            return;
+          }
+          cont.classList.toggle("compact", checked);
+        });
       } else if (type === "subDisplay") {
-        // Toggle visibility of all sub displays
         document.querySelectorAll('.gg-deals-container.bundle-sub-display').forEach(el => {
           el.style.display = checked ? "" : "none";
         });
       }
 
       // Update all related toggle buttons
-      container
-        .querySelectorAll(`input[id*=toggle-${type}]`)
-        .forEach((input) => {
-          input.checked = checked;
-          input.closest(".gg-toggle").classList.toggle("active", checked);
-        });
+      container.querySelectorAll(`input[id*=toggle-${type}]`).forEach((input) => {
+        input.checked = checked;
+        input.closest(".gg-toggle").classList.toggle("active", checked);
+      });
     }
 
     // Add event listeners for all toggles
@@ -717,7 +731,7 @@
 
     // Add refresh button listeners to both compact and full view buttons
     container.querySelectorAll(".gg-refresh").forEach(refreshButton => {
-      const refreshText = refreshButton.querySelector(".gg-refresh-text");
+      const refreshText = refreshButton.querySelector(".gg-tooltip-text");
       refreshButton.addEventListener("click", async function () {
         refreshButton.classList.add("loading");
         refreshButton.disabled = true;
@@ -767,14 +781,19 @@
       const [, type, id] = urlMatch;
       const timestamp = priceCache.getTimestamp(`${type}_${id}`);
       if (timestamp) {
-        const timeAgo = Math.floor((Date.now() - timestamp) / 60000); // minutes
-        const refreshText = container.querySelector(".gg-refresh-text");
-        if (timeAgo < 60) {
-          refreshText.textContent = `Updated ${timeAgo}m ago`;
-        } else {
-          const hoursAgo = Math.floor(timeAgo / 60);
-          refreshText.textContent = `Updated ${hoursAgo}h ago`;
-        }
+        // Update all refresh tooltips with the timestamp
+        container.querySelectorAll('.gg-refresh').forEach(refreshButton => {
+          const tooltipSpan = refreshButton.querySelector('.gg-tooltip-text');
+          if (tooltipSpan) {
+            const timeAgo = Math.floor((Date.now() - timestamp) / 60000); // minutes
+            if (timeAgo < 60) {
+              tooltipSpan.textContent = `Updated ${timeAgo}m ago`;
+            } else {
+              const hoursAgo = Math.floor(timeAgo / 60);
+              tooltipSpan.textContent = `Updated ${hoursAgo}h ago`;
+            }
+          }
+        });
       }
     }
 
