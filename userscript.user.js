@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         GG.deals Steam Companion
 // @namespace    http://tampermonkey.net/
-// @version      1.3
+// @version      1.4
 // @description  Shows lowest price from gg.deals on Steam game pages
 // @author       Crimsab
 // @license      GPL-3.0-or-later
 // @match        https://store.steampowered.com/app/*
+// @match        https://store.steampowered.com/sub/*
+// @match        https://store.steampowered.com/bundle/*
 // @icon         https://gg.deals/favicon.ico
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
@@ -31,6 +33,7 @@
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;
+            clear: both;
         }
         .gg-deals-container.compact {
             padding: 10px;
@@ -295,6 +298,7 @@
             opacity: 0.7;
             transition: opacity 0.2s ease;
             white-space: nowrap;
+            color: #67c1f5;
         }
         .gg-toggle:hover {
             opacity: 1;
@@ -404,35 +408,36 @@
         .bundle-sub-display {
             background: #16202d !important;
             border-radius: 4px;
-            padding: 8px !important;
-            margin: 10px 0 !important;
             border: 1px solid #67c1f530;
+            position: relative;
+            z-index: 1;
         }
         .game_area_purchase_game_wrapper + .bundle-sub-display {
-            margin-top: 5px !important;
+            margin-top: -10px !important;
         }
-        .bundle-sub-display .gg-compact-row {
-            display: flex !important;
-            align-items: center;
-            gap: 15px;
+        .bundle_contents_preview + .gg-deals-container {
+            margin-top: 0 !important;
         }
-        .bundle-sub-display .gg-compact-prices {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            flex: 1;
+        .game_area_purchase + .gg-deals-container {
+            margin-top: 0 !important;
         }
-        .bundle-sub-display .gg-price-value {
-            font-size: 14px !important;
+        .gg-view-offers {
+            display: inline-block;
+            text-align: center;
+            transition: transform 0.2s ease;
         }
-        .bundle-sub-display .gg-view-offers {
-            font-size: 12px !important;
-            padding: 4px 12px !important;
+        .gg-view-offers:hover {
+            transform: translateY(-1px);
         }
-        /* Ensure no conflicts with other extensions */
-        .bundle-sub-display + .steamdb_prices,
-        .bundle-sub-display + .augmented-steam-prices {
-            margin-top: 10px !important;
+        .gg-refresh {
+            padding: 5px 8px;
+        }
+        .gg-refresh:hover {
+            padding: 5px 8px;
+        }
+        .gg-price-value {
+            display: inline-block;
+            min-width: 80px;
         }
     `);
 
@@ -440,18 +445,22 @@
   const toggleStates = {
     official: GM_getValue("showOfficial", true),
     keyshop: GM_getValue("showKeyshop", true),
-    compact: GM_getValue("compactView", false), // Thanks to @enchained for the suggestion https://github.com/Crimsab/ggdeals-steam-companion/issues/2
+    compact: GM_getValue("compactView", false),
+    subDisplay: GM_getValue("showSubDisplay", true)
   };
 
   // Cache configuration
   const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
   const RATE_LIMIT_DELAY = 2000; // 2 seconds between requests
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = 1;
 
   // Cache structure with force refresh option
   const priceCache = {
     get: function (key, forceRefresh = false) {
-      if (forceRefresh) return null;
+      if (forceRefresh) {
+        GM_setValue(`cache_${key}`, "");
+        return null;
+      }
 
       const cached = GM_getValue(`cache_${key}`);
       if (!cached) return null;
@@ -548,29 +557,21 @@
                             </svg>
                         </div>
                         <div class="gg-settings-content">
-                            <label class="gg-toggle ${
-                              toggleStates.official ? "active" : ""
-                            }" title="Toggle Official Stores">
-                                <input type="checkbox" id="gg-toggle-official-compact" ${
-                                  toggleStates.official ? "checked" : ""
-                                }>
+                            <label class="gg-toggle ${toggleStates.official ? "active" : ""}" title="Toggle Official Stores">
+                                <input type="checkbox" id="gg-toggle-official-compact" ${toggleStates.official ? "checked" : ""}>
                                 <label>Official</label>
                             </label>
-                            <label class="gg-toggle ${
-                              toggleStates.keyshop ? "active" : ""
-                            }" title="Toggle Keyshops">
-                                <input type="checkbox" id="gg-toggle-keyshop-compact" ${
-                                  toggleStates.keyshop ? "checked" : ""
-                                }>
+                            <label class="gg-toggle ${toggleStates.keyshop ? "active" : ""}" title="Toggle Keyshops">
+                                <input type="checkbox" id="gg-toggle-keyshop-compact" ${toggleStates.keyshop ? "checked" : ""}>
                                 <label>Keyshops</label>
                             </label>
-                            <label class="gg-toggle ${
-                              toggleStates.compact ? "active" : ""
-                            }" title="Toggle Compact View">
-                                <input type="checkbox" id="gg-toggle-compact-menu" ${
-                                  toggleStates.compact ? "checked" : ""
-                                }>
+                            <label class="gg-toggle ${toggleStates.compact ? "active" : ""}" title="Toggle Compact View">
+                                <input type="checkbox" id="gg-toggle-compact-menu" ${toggleStates.compact ? "checked" : ""}>
                                 <label>Compact</label>
+                            </label>
+                            <label class="gg-toggle ${toggleStates.subDisplay ? "active" : ""}" title="Toggle Sub/Bundle Displays">
+                                <input type="checkbox" id="gg-toggle-sub-display-compact" ${toggleStates.subDisplay ? "checked" : ""}>
+                                <label>Bundle Display</label>
                             </label>
                         </div>
                     </div>
@@ -608,29 +609,21 @@
                 </div>
             </div>
             <div class="gg-controls">
-                <label class="gg-toggle ${
-                  toggleStates.official ? "active" : ""
-                }" title="Toggle Official Stores">
-                    <input type="checkbox" id="gg-toggle-official" ${
-                      toggleStates.official ? "checked" : ""
-                    }>
+                <label class="gg-toggle ${toggleStates.official ? "active" : ""}" title="Toggle Official Stores">
+                    <input type="checkbox" id="gg-toggle-official" ${toggleStates.official ? "checked" : ""}>
                     <label>Official</label>
                 </label>
-                <label class="gg-toggle ${
-                  toggleStates.keyshop ? "active" : ""
-                }" title="Toggle Keyshops">
-                    <input type="checkbox" id="gg-toggle-keyshop" ${
-                      toggleStates.keyshop ? "checked" : ""
-                    }>
+                <label class="gg-toggle ${toggleStates.keyshop ? "active" : ""}" title="Toggle Keyshops">
+                    <input type="checkbox" id="gg-toggle-keyshop" ${toggleStates.keyshop ? "checked" : ""}>
                     <label>Keyshops</label>
                 </label>
-                <label class="gg-toggle ${
-                  toggleStates.compact ? "active" : ""
-                }" title="Toggle Compact View">
-                    <input type="checkbox" id="gg-toggle-compact" ${
-                      toggleStates.compact ? "checked" : ""
-                    }>
+                <label class="gg-toggle ${toggleStates.compact ? "active" : ""}" title="Toggle Compact View">
+                    <input type="checkbox" id="gg-toggle-compact" ${toggleStates.compact ? "checked" : ""}>
                     <label>Compact</label>
+                </label>
+                <label class="gg-toggle ${toggleStates.subDisplay ? "active" : ""}" title="Toggle Sub/Bundle Displays">
+                    <input type="checkbox" id="gg-toggle-sub-display" ${toggleStates.subDisplay ? "checked" : ""}>
+                    <label>Bundle Display</label>
                 </label>
                 <button class="gg-icon-button gg-refresh" title="Refresh Prices">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -656,6 +649,7 @@
     const toggleOfficial = container.querySelector("#gg-toggle-official");
     const toggleKeyshop = container.querySelector("#gg-toggle-keyshop");
     const toggleCompact = container.querySelector("#gg-toggle-compact");
+    const toggleSubDisplay = container.querySelector("#gg-toggle-sub-display");
 
     function updateToggleState(type, checked) {
       toggleStates[type] = checked;
@@ -673,6 +667,11 @@
           .classList.toggle("hidden", !checked);
       } else if (type === "compact") {
         container.classList.toggle("compact", checked);
+      } else if (type === "subDisplay") {
+        // Toggle visibility of all sub displays
+        document.querySelectorAll('.gg-deals-container.bundle-sub-display').forEach(el => {
+          el.style.display = checked ? "" : "none";
+        });
       }
 
       // Update all related toggle buttons
@@ -684,7 +683,7 @@
         });
     }
 
-    // Add event listeners for both sets of controls
+    // Add event listeners for all toggles
     [toggleOfficialCompact, toggleOfficial].forEach((toggle) => {
       if (toggle) {
         toggle.addEventListener("change", (e) =>
@@ -709,69 +708,42 @@
       }
     });
 
-    // Add refresh button listener
-    const refreshButton = container.querySelector(".gg-refresh");
-    const refreshText = refreshButton.querySelector(".gg-refresh-text");
-    refreshButton.addEventListener("click", async function () {
-      const gameTitle =
-        document.querySelector(".apphub_AppName")?.textContent.trim() ||
-        document
-          .querySelector(".game_title_area h2.pageheader")
-          ?.textContent.trim() ||
-        document.querySelector("#appHubAppName")?.textContent.trim();
+    const toggleSubDisplayCompact = container.querySelector("#gg-toggle-sub-display-compact");
+    [toggleSubDisplay, toggleSubDisplayCompact].forEach((toggle) => {
+      if (toggle) {
+        toggle.addEventListener("change", (e) => updateToggleState("subDisplay", e.target.checked));
+      }
+    });
 
-      if (!gameTitle) return;
+    // Add refresh button listeners to both compact and full view buttons
+    container.querySelectorAll(".gg-refresh").forEach(refreshButton => {
+      const refreshText = refreshButton.querySelector(".gg-refresh-text");
+      refreshButton.addEventListener("click", async function () {
+        refreshButton.classList.add("loading");
+        refreshButton.disabled = true;
 
-      refreshButton.classList.add("loading");
-      refreshButton.disabled = true;
-
-      try {
-        const purchaseSection = document.querySelector("#game_area_purchase");
-        const firstPurchaseGame = purchaseSection?.querySelector('.game_area_purchase_game');
-        const mainAppId = firstPurchaseGame?.querySelector('input[name="subid"]')?.value;
-
-        if (mainAppId) {
-          await fetchGamePrices(gameTitle, 'gg-deals-main', true, { type: 'sub', id: mainAppId });
-          const timestamp = priceCache.getTimestamp(`sub_${mainAppId}`);
-          if (timestamp) {
+        try {
+          const urlMatch = window.location.pathname.match(/\/(app|sub|bundle)\/(\d+)/);
+          if (urlMatch) {
+            const [, type, id] = urlMatch;
+            await fetchGamePrices(null, container.id, true, { type, id });
             refreshText.textContent = "Updated just now";
             setTimeout(() => {
               refreshText.textContent = "";
             }, 3000);
           }
+        } catch (error) {
+          console.error("Failed to refresh prices:", error);
+          refreshText.textContent = "Refresh failed";
+          setTimeout(() => {
+            refreshText.textContent = "";
+          }, 3000);
+        } finally {
+          refreshButton.classList.remove("loading");
+          refreshButton.disabled = false;
         }
-      } catch (error) {
-        console.error("Failed to refresh prices:", error);
-        refreshText.textContent = "Refresh failed";
-        setTimeout(() => {
-          refreshText.textContent = "";
-        }, 3000);
-      } finally {
-        refreshButton.classList.remove("loading");
-        refreshButton.disabled = false;
-      }
+      });
     });
-
-    // Update last refresh time if cached data exists
-    const gameTitle =
-      document.querySelector(".apphub_AppName")?.textContent.trim() ||
-      document
-        .querySelector(".game_title_area h2.pageheader")
-        ?.textContent.trim() ||
-      document.querySelector("#appHubAppName")?.textContent.trim();
-
-    if (gameTitle) {
-      const timestamp = priceCache.getTimestamp(gameTitle);
-      if (timestamp) {
-        const timeAgo = Math.floor((Date.now() - timestamp) / 60000); // minutes
-        if (timeAgo < 60) {
-          refreshText.textContent = `Updated ${timeAgo}m ago`;
-        } else {
-          const hoursAgo = Math.floor(timeAgo / 60);
-          refreshText.textContent = `Updated ${hoursAgo}h ago`;
-        }
-      }
-    }
 
     // Add settings dropdown toggle
     const settingsIcon = container.querySelector(".gg-settings-icon");
@@ -784,13 +756,27 @@
 
     // Close settings dropdown when clicking outside
     document.addEventListener("click", (e) => {
-      if (
-        !settingsContent.contains(e.target) &&
-        !settingsIcon.contains(e.target)
-      ) {
+      if (!settingsContent.contains(e.target) && !settingsIcon.contains(e.target)) {
         settingsContent.classList.remove("show");
       }
     });
+
+    // Update last refresh time if cached data exists
+    const urlMatch = window.location.pathname.match(/\/(app|sub|bundle)\/(\d+)/);
+    if (urlMatch) {
+      const [, type, id] = urlMatch;
+      const timestamp = priceCache.getTimestamp(`${type}_${id}`);
+      if (timestamp) {
+        const timeAgo = Math.floor((Date.now() - timestamp) / 60000); // minutes
+        const refreshText = container.querySelector(".gg-refresh-text");
+        if (timeAgo < 60) {
+          refreshText.textContent = `Updated ${timeAgo}m ago`;
+        } else {
+          const hoursAgo = Math.floor(timeAgo / 60);
+          refreshText.textContent = `Updated ${hoursAgo}h ago`;
+        }
+      }
+    }
 
     return container;
   }
@@ -855,35 +841,113 @@
         return;
     }
 
-    const url = `https://gg.deals/steam/${type}/${id}/`; // Thanks to @enchained https://github.com/Crimsab/ggdeals-steam-companion/issues/1
-
-    try {
-        const response = await fetchWithRetry(url);
-        const data = extractPriceData(response.responseText);
-        if (data) {
-            priceCache.set(cacheKey, data);
-            updatePriceDisplay(data, containerId);
-        }
-    } catch (error) {
-        console.error("GG.deals error:", error);
-        updatePriceDisplay(null, containerId);
+    // If forcing refresh, clear cache for all containers on the page
+    if (forceRefresh) {
+        document.querySelectorAll('.gg-deals-container').forEach(container => {
+            if (container.id && container.id !== containerId) {
+                const match = container.id.match(/gg-deals-(app|sub|bundle)-(\d+)/);
+                if (match) {
+                    const [, containerType, containerId] = match;
+                    priceCache.get(`${containerType}_${containerId}`, true);
+                }
+            }
+        });
     }
+
+    // Function to convert game name to URL slug
+    const toUrlSlug = (name) => {
+        return name.toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    };
+
+    // Define base URL formats
+    const baseFormats = [
+        { type: type, id: id },  // Try original type first
+        { type: 'sub', id: id }, // Try sub if original was app
+        { type: 'app', id: id }  // Try app if original was sub
+    ];
+
+    // Filter unique formats
+    const urlFormats = baseFormats.filter((format, index) => 
+        format.type === type || 
+        baseFormats.findIndex(f => f.type === format.type) === index
+    );
+
+    // Try each URL format
+    for (const format of urlFormats) {
+        try {
+            const steamUrl = `https://gg.deals/steam/${format.type}/${format.id}/`;
+            const response = await fetchWithRetry(steamUrl);
+            const data = extractPriceData(response.responseText);
+            if (data && data.officialPrice !== "No data") {
+                priceCache.set(cacheKey, data);
+                updatePriceDisplay(data, containerId);
+                return;
+            }
+        } catch (error) {
+            console.warn(`GG.deals ${format.type} URL fetch failed:`, error);
+        }
+    }
+
+    // If the direct Steam URL didn't work, just show No data
+    // Don't try game name based URL anymore
+    updatePriceDisplay({
+        officialPrice: "No data",
+        keyshopPrice: "No data",
+        historicalData: [],
+        lowestPriceType: null,
+        url: `https://gg.deals/steam/${type}/${id}/`,
+        isCorrectGame: true
+    }, containerId);
   }
 
-  function extractPriceData(html) {
+  function extractPriceData(html, expectedGameName) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
 
-    // Check if it's a valid game page by looking for price elements
-    const priceElements = doc.querySelectorAll(".price-inner.numeric");
-    if (priceElements.length === 0) {
-      return null;
+    // Get the actual game name from the page
+    const pageGameName = doc.querySelector('.game-info-title')?.textContent?.trim() ||
+                        doc.querySelector('.game-header-title')?.textContent?.trim();
+
+    // Check if we got the correct game
+    const isCorrectGame = !expectedGameName || !pageGameName || 
+                         pageGameName.toLowerCase().includes(expectedGameName.toLowerCase()) ||
+                         expectedGameName.toLowerCase().includes(pageGameName.toLowerCase());
+
+    // Check if it's a valid game page
+    if (!doc.querySelector('.game-info-price-col')) {
+        return {
+            officialPrice: "No data",
+            keyshopPrice: "No data",
+            historicalData: [],
+            lowestPriceType: null,
+            url: doc.querySelector('link[rel="canonical"]')?.href || "https://gg.deals",
+            isCorrectGame
+        };
     }
 
-    const officialPrice = priceElements[0]?.textContent.trim() || "N/A";
-    const keyshopPrice = priceElements[1]?.textContent.trim() || "N/A";
+    // Find current prices (non-historical)
+    let officialPrice = "No data";
+    let keyshopPrice = "No data";
 
-    // Historical lows
+    // Look for current prices in the main price sections (not historical)
+    const currentPriceSections = Array.from(doc.querySelectorAll('.game-info-price-col')).filter(
+      section => !section.classList.contains('historical')
+    );
+
+    currentPriceSections.forEach(section => {
+      const label = section.querySelector('.game-info-price-label')?.textContent.trim();
+      const price = section.querySelector('.price-inner.numeric')?.textContent.trim();
+      
+      if (label?.includes('Official Stores')) {
+        officialPrice = price || "No data";
+      } else if (label?.includes('Keyshops')) {
+        keyshopPrice = price || "No data";
+      }
+    });
+
+    // Historical lows (separate section)
     const historicalPrices = doc.querySelectorAll(
       ".game-info-price-col.historical.game-header-price-box"
     );
@@ -900,6 +964,8 @@
         ?.textContent.trim();
       date = date?.replace("Expired", "").trim();
 
+      if (!price || !date) return;
+
       const historicalText = `Historical Low: ${price} (${date})`;
 
       if (label?.includes("Official Stores Low")) {
@@ -908,7 +974,7 @@
           price: price,
           historical: historicalText,
         });
-      } else if (label?.includes("Keyshops Low")) {
+      } else if (label?.includes("Keyshops Low") && keyshopPrice !== "No data") {
         historicalData.push({
           type: "keyshop",
           price: price,
@@ -917,7 +983,7 @@
       }
     });
 
-    // Compare prices and determine the lowest
+    // Compare current prices (not historical) to determine the lowest
     const officialPriceNum = parseFloat(
       officialPrice.replace(/[^0-9,.]/g, "").replace(",", ".")
     );
@@ -936,7 +1002,7 @@
     }
 
     // Get the current URL for the "View Offers" link
-    const currentUrl = doc.querySelector('link[rel="canonical"]')?.href || "";
+    const currentUrl = doc.querySelector('link[rel="canonical"]')?.href || "https://gg.deals";
 
     return {
       officialPrice: officialPrice,
@@ -944,6 +1010,7 @@
       historicalData: historicalData,
       lowestPriceType: lowestPriceType,
       url: currentUrl,
+      isCorrectGame
     };
   }
 
@@ -955,96 +1022,114 @@
     const links = container.querySelectorAll(".gg-view-offers");
 
     if (data) {
-      // Update prices based on container type
-      // Thanks to @enchained for the suggestion to show the container under bundles as well https://github.com/Crimsab/ggdeals-steam-companion/issues/3
-      if (container.classList.contains('bundle-sub-display')) {
-        // Update compact display
-        const officialPrice = container.querySelector('.gg-compact-official-price');
-        const keyshopPrice = container.querySelector('.gg-compact-keyshop-price');
-        const officialHistorical = container.querySelector('.gg-compact-official-historical');
-        const keyshopHistorical = container.querySelector('.gg-compact-keyshop-historical');
+        // Update prices based on container type
+        if (container.classList.contains('bundle-sub-display')) {
+            // Update compact display
+            const officialPrice = container.querySelector('.gg-compact-official-price');
+            const keyshopPrice = container.querySelector('.gg-compact-keyshop-price');
+            const officialHistorical = container.querySelector('.gg-compact-official-historical');
+            const keyshopHistorical = container.querySelector('.gg-compact-keyshop-historical');
 
-        if (officialPrice) officialPrice.textContent = data.officialPrice;
-        if (keyshopPrice) keyshopPrice.textContent = data.keyshopPrice;
+            if (officialPrice) officialPrice.textContent = data.officialPrice;
+            if (keyshopPrice) keyshopPrice.textContent = data.keyshopPrice;
 
-        // Update historical data
-        const officialHistData = data.historicalData.find(h => h.type === 'official');
-        const keyshopHistData = data.historicalData.find(h => h.type === 'keyshop');
+            // Show historical data regardless of current price status
+            if (officialHistorical) {
+                const officialHistData = data.historicalData.find(h => h.type === 'official');
+                officialHistorical.textContent = officialHistData?.historical || '';
+            }
+            if (keyshopHistorical) {
+                const keyshopHistData = data.historicalData.find(h => h.type === 'keyshop');
+                keyshopHistorical.textContent = keyshopHistData?.historical || '';
+            }
 
-        if (officialHistorical) officialHistorical.textContent = officialHistData?.historical || '';
-        if (keyshopHistorical) keyshopHistorical.textContent = keyshopHistData?.historical || '';
+            // Update best price indicators
+            if (officialPrice) officialPrice.classList.remove('best-price');
+            if (keyshopPrice) keyshopPrice.classList.remove('best-price');
 
-        // Update best price indicators
-        if (officialPrice) officialPrice.classList.remove('best-price');
-        if (keyshopPrice) keyshopPrice.classList.remove('best-price');
+            if (data.lowestPriceType === 'official' && officialPrice) {
+                officialPrice.classList.add('best-price');
+            } else if (data.lowestPriceType === 'keyshop' && keyshopPrice) {
+                keyshopPrice.classList.add('best-price');
+            }
+        } else {
+            // Update full display
+            const elements = {
+                official: {
+                    price: container.querySelector("#gg-official-price"),
+                    historical: container.querySelector("#gg-official-historical"),
+                    compactPrice: container.querySelector("#gg-compact-official-price"),
+                    compactHistorical: container.querySelector("#gg-compact-official-historical")
+                },
+                keyshop: {
+                    price: container.querySelector("#gg-keyshop-price"),
+                    historical: container.querySelector("#gg-keyshop-historical"),
+                    compactPrice: container.querySelector("#gg-compact-keyshop-price"),
+                    compactHistorical: container.querySelector("#gg-compact-keyshop-historical")
+                }
+            };
 
-        if (data.lowestPriceType === 'official' && officialPrice) {
-          officialPrice.classList.add('best-price');
-        } else if (data.lowestPriceType === 'keyshop' && keyshopPrice) {
-          keyshopPrice.classList.add('best-price');
+            // Update prices
+            if (elements.official.price) elements.official.price.textContent = data.officialPrice;
+            if (elements.keyshop.price) elements.keyshop.price.textContent = data.keyshopPrice;
+            if (elements.official.compactPrice) elements.official.compactPrice.textContent = data.officialPrice;
+            if (elements.keyshop.compactPrice) elements.keyshop.compactPrice.textContent = data.keyshopPrice;
+
+            // Update historical data regardless of current price status
+            const officialHistData = data.historicalData.find(h => h.type === 'official');
+            const keyshopHistData = data.historicalData.find(h => h.type === 'keyshop');
+
+            if (elements.official.historical) {
+                elements.official.historical.textContent = officialHistData?.historical || '';
+            }
+            if (elements.keyshop.historical) {
+                elements.keyshop.historical.textContent = keyshopHistData?.historical || '';
+            }
+            if (elements.official.compactHistorical) {
+                elements.official.compactHistorical.textContent = officialHistData?.historical || '';
+            }
+            if (elements.keyshop.compactHistorical) {
+                elements.keyshop.compactHistorical.textContent = keyshopHistData?.historical || '';
+            }
+
+            // Update best price indicators
+            [elements.official.price, elements.official.compactPrice, elements.keyshop.price, elements.keyshop.compactPrice].forEach(el => {
+                if (el) el.classList.remove('best-price');
+            });
+
+            if (data.lowestPriceType === 'official') {
+                [elements.official.price, elements.official.compactPrice].forEach(el => {
+                    if (el) el.classList.add('best-price');
+                });
+            } else if (data.lowestPriceType === 'keyshop') {
+                [elements.keyshop.price, elements.keyshop.compactPrice].forEach(el => {
+                    if (el) el.classList.add('best-price');
+                });
+            }
         }
-      } else {
-        // Update full display (original container)
-        container.querySelector("#gg-official-price").textContent = data.officialPrice;
-        container.querySelector("#gg-keyshop-price").textContent = data.keyshopPrice;
-        container.querySelector("#gg-compact-official-price").textContent = data.officialPrice;
-        container.querySelector("#gg-compact-keyshop-price").textContent = data.keyshopPrice;
 
-        const officialHistData = data.historicalData.find(h => h.type === 'official');
-        const keyshopHistData = data.historicalData.find(h => h.type === 'keyshop');
-
-        container.querySelector("#gg-official-historical").textContent = officialHistData?.historical || '';
-        container.querySelector("#gg-keyshop-historical").textContent = keyshopHistData?.historical || '';
-        container.querySelector("#gg-compact-official-historical").textContent = officialHistData?.historical || '';
-        container.querySelector("#gg-compact-keyshop-historical").textContent = keyshopHistData?.historical || '';
-
-        // Update best price indicators
-        const priceElements = [
-          container.querySelector("#gg-official-price"),
-          container.querySelector("#gg-compact-official-price"),
-          container.querySelector("#gg-keyshop-price"),
-          container.querySelector("#gg-compact-keyshop-price")
-        ];
-
-        priceElements.forEach(el => {
-          if (el) el.classList.remove('best-price');
-        });
-
-        if (data.lowestPriceType === 'official') {
-          [container.querySelector("#gg-official-price"),
-           container.querySelector("#gg-compact-official-price")].forEach(el => {
-              if (el) el.classList.add('best-price');
-          });
-        } else if (data.lowestPriceType === 'keyshop') {
-          [container.querySelector("#gg-keyshop-price"),
-           container.querySelector("#gg-compact-keyshop-price")].forEach(el => {
-              if (el) el.classList.add('best-price');
-          });
+        // Update all View Offers links
+        if (data.url) {
+            links.forEach(link => {
+                link.href = data.url;
+            });
         }
-      }
-
-      // Update all View Offers links
-      if (data.url) {
-        links.forEach(link => {
-          link.href = data.url;
-        });
-      }
     } else {
-      // Handle error state
-      const priceElements = container.querySelectorAll('.gg-price-value');
-      priceElements.forEach(el => {
-        el.textContent = 'Not found';
-      });
+        // Handle error state
+        const priceElements = container.querySelectorAll('.gg-price-value:not(.historical)');
+        priceElements.forEach(el => {
+            el.textContent = 'Not found';
+        });
 
-      const historicalElements = container.querySelectorAll('.gg-tooltip-text');
-      historicalElements.forEach(el => {
-        el.textContent = '';
-      });
+        const historicalElements = container.querySelectorAll('.gg-tooltip-text, .gg-price-value.historical');
+        historicalElements.forEach(el => {
+            el.textContent = '';
+        });
 
-      // Set default URL for all View Offers links
-      links.forEach(link => {
-        link.href = 'https://gg.deals';
-      });
+        // Set default URL for all View Offers links
+        links.forEach(link => {
+            link.href = `https://gg.deals/steam/${type}/${id}/`;
+        });
     }
   }
 
@@ -1052,6 +1137,7 @@
     const container = document.createElement('div');
     container.className = 'gg-deals-container compact bundle-sub-display';
     container.id = containerId;
+    container.style.display = toggleStates.subDisplay ? "" : "none";
     container.innerHTML = `
         <div class="gg-compact-row">
             <img src="https://gg.deals/favicon.ico" alt="GG.deals" class="gg-icon">
@@ -1084,65 +1170,85 @@
 
   function initializeWhenVisible() {
     if (document.visibilityState === "visible" && !isInitialized) {
-      const urlMatch = window.location.pathname.match(/\/(app|sub|bundle)\/(\d+)/);
-      if (!urlMatch) return;
+        const urlMatch = window.location.pathname.match(/\/(app|sub|bundle)\/(\d+)/);
+        if (!urlMatch) return;
 
-      const [, pageType, pageId] = urlMatch;
-      
-      if (pageType === 'app') {
-        // Handle main app page
-        const purchaseSection = document.querySelector("#game_area_purchase");
-        if (purchaseSection) {
-          isInitialized = true;
+        const [, pageType, pageId] = urlMatch;
+        isInitialized = true;
 
-          // Get the main app ID from the first purchase option
-          const firstPurchaseGame = purchaseSection.querySelector('.game_area_purchase_game');
-          const mainAppId = firstPurchaseGame?.querySelector('input[name="subid"]')?.value;
+        // For app pages, show the full container at the top
+        if (pageType === 'app') {
+            const purchaseSection = document.querySelector("#game_area_purchase");
+            if (purchaseSection) {
+                const mainContainer = createPriceContainer();
+                mainContainer.id = 'gg-deals-main';
+                purchaseSection.parentNode.insertBefore(mainContainer, purchaseSection);
+                fetchGamePrices(null, 'gg-deals-main', false, { type: pageType, id: pageId });
+            }
+        }
 
-          if (mainAppId) {
-            const mainContainer = createPriceContainer();
-            mainContainer.id = 'gg-deals-main';
-            purchaseSection.parentNode.insertBefore(mainContainer, purchaseSection);
-            fetchGamePrices(null, 'gg-deals-main', false, { type: 'sub', id: mainAppId });
+        // For sub/bundle pages, show only one display at the top
+        if (pageType === 'sub' || pageType === 'bundle') {
+            // Try to find the first purchase game section
+            const firstPurchaseGame = document.querySelector('.game_area_purchase_game');
+            if (firstPurchaseGame) {
+                const mainContainer = createPriceContainer();
+                mainContainer.id = `gg-deals-${pageType}-${pageId}`;
+                firstPurchaseGame.parentNode.insertBefore(mainContainer, firstPurchaseGame);
+                fetchGamePrices(null, mainContainer.id, false, { type: pageType, id: pageId });
+            }
+            return; // Exit early to prevent additional displays
+        }
 
-            // Add prices to bundles and subs
-            document.querySelectorAll('.game_area_purchase_game').forEach(async (element) => {
+        // Handle all purchase games (only for app pages)
+        if (pageType === 'app') {
+            document.querySelectorAll('.game_area_purchase_game').forEach((element) => {
+              // Skip if this is a demo section
+              if (element.closest('.demo_above_purchase')) {
+                  return;
+              }
+          
+              // Get the ID and type from the inputs
               const bundleInput = element.querySelector('input[name="bundleid"]');
               const subInput = element.querySelector('input[name="subid"]');
-              
-              if (bundleInput || subInput) {
-                const itemId = bundleInput ? bundleInput.value : subInput.value;
-                const itemType = bundleInput ? 'bundle' : 'sub';
-                
-                // Skip to showe the compact container under the Add to Cart button if this is the main game (when it appears as a package)
-                if (itemType === 'sub' && itemId === mainAppId) {
-                  return;
-                }
-                
-                const wrapper = element.closest('.game_area_purchase_game_wrapper');
-                
-                if (wrapper) {
-                  const containerId = `gg-deals-${itemType}-${itemId}`;
-                  const compactDisplay = createCompactPriceDisplay(containerId);
-                  wrapper.parentNode.insertBefore(compactDisplay, wrapper.nextSibling);
-                  await fetchGamePrices(null, containerId, false, { type: itemType, id: itemId });
-                }
+          
+              if (!bundleInput && !subInput) {
+                  // If no inputs found, try to get ID from the element ID
+                  const elementId = element.id.match(/\d+$/)?.[0];
+          
+                  // Skip main app on app pages
+                  if (pageType === 'app' && elementId === pageId) {
+                      return; // Skip main app on app pages
+                  }
               }
+
+                let itemType, itemId;
+                if (bundleInput) {
+                    itemType = 'bundle';
+                    itemId = bundleInput.value;
+                } else if (subInput) {
+                    itemType = 'sub';
+                    itemId = subInput.value;
+                } else {
+                    // Fallback to page type/id
+                    itemType = pageType;
+                    itemId = pageId;
+                }
+
+                const containerId = `gg-deals-${itemType}-${itemId}`;
+                const compactDisplay = createCompactPriceDisplay(containerId);
+                
+                // Insert before game_purchase_action
+                const purchaseAction = element.querySelector('.game_purchase_action');
+                if (purchaseAction) {
+                    purchaseAction.parentNode.insertBefore(compactDisplay, purchaseAction);
+                    // Use Promise to handle the async operation properly
+                    (async () => {
+                        await fetchGamePrices(null, containerId, false, { type: itemType, id: itemId });
+                    })();
+                }
             });
-          }
         }
-      } else {
-        // Handle bundle/sub pages
-        const purchaseWrapper = document.querySelector('.game_area_purchase_game_wrapper');
-        if (purchaseWrapper) {
-          isInitialized = true;
-          const containerId = `gg-deals-${pageType}-${pageId}`;
-          const priceContainer = createPriceContainer();
-          priceContainer.id = containerId;
-          purchaseWrapper.parentNode.insertBefore(priceContainer, purchaseWrapper.nextSibling);
-          fetchGamePrices(null, containerId, false, { type: pageType, id: pageId });
-        }
-      }
     }
   }
 
