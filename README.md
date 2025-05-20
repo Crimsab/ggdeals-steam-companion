@@ -55,7 +55,7 @@ A userscript that enhances Steam store pages by displaying price comparisons fro
 
 ## Changelog
 
-## 1.6
+### 1.6
 - Added official API support (requires your API key)
 - Option to disable/enable web scraping
 - Option to disable/enable API
