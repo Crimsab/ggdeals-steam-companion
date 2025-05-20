@@ -53,6 +53,38 @@ A userscript that enhances Steam store pages by displaying price comparisons fro
 3. Use the toggles to show/hide official stores and keyshop prices
 4. Click "View Offers" to see all available deals on GG.deals
 
+## Changelog
+
+## 1.6
+- Added official API support (requires your API key)
+- Option to disable/enable web scraping
+- Option to disable/enable API
+- Complete customization of the colors
+- Option to choose the preferred region and the currency (API)
+- If web scraping is off, it doesn't show the prices for the bundles (API gives null data in resposne)
+
+### 1.5.1
+- Fixed tooltip hover on historical prices
+
+#### 1.5
+- Fixed button going over container, fixed uneven icon, moved updated text as tooltip
+
+### 1.4
+- Added bundle displays, fixed UI errors, forced correct URLs, and other small things
+
+### 1.3
+- Various fixes
+- Integrated suggestions from @enchained for /issues/1, 2 & 3 (better title search, compact view and support for package and bundles)
+
+### 1.2
+- LICENSE and greasyfork upload
+
+### 1.1 
+- Integration of a cache system for the prices, with manual refresh
+
+### 1.0
+- Initial release
+
 ## Permissions
 
 The script requires the following permissions:

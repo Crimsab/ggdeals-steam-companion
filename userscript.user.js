@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GG.deals Steam Companion
 // @namespace    http://tampermonkey.net/
-// @version      1.5.1
+// @version      1.6
 // @description  Shows lowest price from gg.deals on Steam game pages
 // @author       Crimsab
 // @license      GPL-3.0-or-later
@@ -13,23 +13,73 @@
 // @grant        GM_addStyle
 // @grant        unsafeWindow
 // @connect      gg.deals
+// @connect      api.gg.deals
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @downloadURL  https://raw.githubusercontent.com/Crimsab/ggdeals-steam-companion/main/userscript.user.js
 // @updateURL    https://raw.githubusercontent.com/Crimsab/ggdeals-steam-companion/main/userscript.user.js
 // ==/UserScript==
 
+// KNOWN LIMITATIONS: 
+// Bundles always use web scraping, never API. The official api does not support steam bundles, giving null results.
+// Subs (packages) and Apps can use either API or web scraping.
+// "Enable Scraping" toggle controls whether web scraping is used when API is disabled or fails.
+
 (function () {
   "use strict";
 
+  // Default color scheme
+  const defaultColors = {
+    background: "#16202d",
+    headerBackground: "#0d141c",
+    officialText: "#67c1f5",
+    officialPrice: "#ffffff",
+    keyshopText: "#67c1f5",
+    keyshopPrice: "#ffffff",
+    bestPrice: "#a4d007",
+    buttonBackground: "linear-gradient(to right, #67c1f5 0%, #4a9bd5 100%)",
+    buttonText: "#ffffff",
+    borderColor: "#67c1f530"
+  };
+
+  // Get saved colors or use defaults
+  const savedColors = {};
+  Object.keys(defaultColors).forEach(key => {
+    savedColors[key] = GM_getValue(`color_${key}`, defaultColors[key]);
+  });
+
+  // Function to apply colors
+  function applyCustomColors() {
+    let customCSS = `
+      :root {
+        --gg-deals-background: ${savedColors.background};
+        --gg-deals-header-bg: ${savedColors.headerBackground};
+        --gg-deals-official-text: ${savedColors.officialText};
+        --gg-deals-official-price: ${savedColors.officialPrice};
+        --gg-deals-keyshop-text: ${savedColors.keyshopText};
+        --gg-deals-keyshop-price: ${savedColors.keyshopPrice};
+        --gg-deals-best-price: ${savedColors.bestPrice};
+        --gg-deals-button-bg: ${savedColors.buttonBackground};
+        --gg-deals-button-text: ${savedColors.buttonText};
+        --gg-deals-border-color: ${savedColors.borderColor};
+      }
+    `;
+    
+    // Create a style element for our custom colors
+    const styleEl = document.getElementById('gg-deals-custom-colors') || document.createElement('style');
+    styleEl.id = 'gg-deals-custom-colors';
+    styleEl.textContent = customCSS;
+    document.head.appendChild(styleEl);
+  }
+
   GM_addStyle(`
         .gg-deals-container {
-            background: #16202d !important;
+            background: var(--gg-deals-background, #16202d) !important;
             border-radius: 4px;
             padding: 15px;
             margin: 20px 0;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            border: 1px solid #67c1f530;
+            border: 1px solid var(--gg-deals-border-color, #67c1f530);
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;
@@ -75,7 +125,7 @@
             font-size: 18px;
         }
         .gg-price-value.best-price {
-            color: #a4d007;
+            color: var(--gg-deals-best-price, #a4d007);
             position: relative;
             padding-top: 16px;
         }
@@ -86,7 +136,7 @@
             top: 0;
             font-size: 12px;
             opacity: 0.9;
-            color: #a4d007;
+            color: var(--gg-deals-best-price, #a4d007);
             white-space: nowrap;
         }
         /* Hide the "Best Price" text in compact view */
@@ -112,16 +162,16 @@
         .gg-settings-icon svg {
             width: 20px;
             height: 20px;
-            fill: #67c1f5;
+            fill: var(--gg-deals-official-text, #67c1f5);
         }
         .gg-settings-content {
             display: none;
             position: absolute;
             right: 0;
-            background: #16202d;
+            background: var(--gg-deals-background, #16202d);
             min-width: 160px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            border: 1px solid #67c1f530;
+            border: 1px solid var(--gg-deals-border-color, #67c1f530);
             border-radius: 4px;
             z-index: 1000;
             padding: 10px;
@@ -146,12 +196,12 @@
         .gg-tooltip-text {
             visibility: hidden;
             opacity: 0;
-            background-color: #16202d;
+            background-color: var(--gg-deals-background, #16202d);
             color: #fff;
             text-align: center;
             padding: 5px 10px;
             border-radius: 4px;
-            border: 1px solid #67c1f530;
+            border: 1px solid var(--gg-deals-border-color, #67c1f530);
             position: absolute;
             z-index: 1;
             bottom: 125%;
@@ -173,12 +223,12 @@
         .gg-historical-tooltip-text {
             visibility: hidden;
             opacity: 0;
-            background-color: #16202d;
+            background-color: var(--gg-deals-background, #16202d);
             color: #fff;
             text-align: center;
             padding: 5px 10px;
             border-radius: 4px;
-            border: 1px solid #67c1f530;
+            border: 1px solid var(--gg-deals-border-color, #67c1f530);
             position: absolute;
             z-index: 1;
             bottom: 125%;
@@ -194,7 +244,7 @@
             gap: 10px;
             margin-top: 10px;
             padding-top: 10px;
-            border-top: 1px solid rgba(103, 193, 245, 0.1);
+            border-top: 1px solid var(--gg-deals-border-color, rgba(103, 193, 245, 0.1));
         }
         .gg-header {
             display: flex;
@@ -202,13 +252,13 @@
             align-items: center;
             margin: -15px -15px 15px -15px;
             padding: 15px;
-            background:rgb(13, 20, 28);
+            background: var(--gg-deals-header-bg, rgb(13, 20, 28));
             border-radius: 4px 4px 0 0;
-            border-bottom: 1px solid rgba(103, 193, 245, 0.2);
+            border-bottom: 1px solid var(--gg-deals-border-color, rgba(103, 193, 245, 0.2));
             text-align: center;
         }
         .gg-title {
-            color: #67c1f5;
+            color: var(--gg-deals-official-text, #67c1f5);
             font-size: 24px;
             font-weight: bold;
             text-transform: uppercase;
@@ -231,7 +281,7 @@
             text-align: center;
             margin-top: 12px;
             padding-top: 12px;
-            border-top: 1px solid rgba(103, 193, 245, 0.1);
+            border-top: 1px solid var(--gg-deals-border-color, rgba(103, 193, 245, 0.1));
         }
         .gg-price-sections {
             display: flex;
@@ -258,7 +308,7 @@
             flex: 1;
         }
         .gg-price-label {
-            color: #67c1f5;
+            color: var(--gg-deals-official-text, #67c1f5);
             font-size: 14px;
             display: flex;
             align-items: center;
@@ -275,7 +325,7 @@
             margin-left: 20px;
         }
         .gg-price-value {
-            color: #fff;
+            color: var(--gg-deals-official-price, #fff);
             font-weight: bold;
             font-size: 24px;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
@@ -284,7 +334,7 @@
         }
         .gg-price-value.historical {
             font-size: 13px;
-            color: #acdbf5;
+            color: var(--gg-deals-official-text, #acdbf5);
             opacity: 0.9;
             margin-top: 4px;
         }
@@ -304,10 +354,10 @@
         }
         .gg-view-offers {
             width: 100%;
-            background: linear-gradient(to right, #67c1f5 0%, #4a9bd5 100%);
+            background: var(--gg-deals-button-bg, linear-gradient(to right, #67c1f5 0%, #4a9bd5 100%));
             padding: 8px 20px;
             border-radius: 3px;
-            color: #fff !important;
+            color: var(--gg-deals-button-text, #fff) !important;
             font-size: 14px;
             text-decoration: none !important;
             transition: all 0.2s ease;
@@ -316,7 +366,7 @@
             white-space: nowrap;
         }
         .gg-view-offers:hover {
-            background: linear-gradient(to right, #7dcbff 0%, #4a9bd5 100%);
+            background: var(--gg-deals-button-bg, linear-gradient(to right, #7dcbff 0%, #4a9bd5 100%));
             transform: translateY(-1px);
         }
         .gg-toggles {
@@ -333,7 +383,7 @@
             opacity: 0.7;
             transition: opacity 0.2s ease;
             white-space: nowrap;
-            color: #67c1f5;
+            color: var(--gg-deals-official-text, #67c1f5);
         }
         .gg-toggle:hover {
             opacity: 1;
@@ -345,7 +395,7 @@
             margin: 0;
         }
         .gg-toggle label {
-            color: #67c1f5;
+            color: var(--gg-deals-official-text, #67c1f5);
             font-size: 12px;
         }
 
@@ -383,7 +433,7 @@
         .gg-icon-button {
             background: none;
             border: none;
-            color: #67c1f5;
+            color: var(--gg-deals-official-text, #67c1f5);
             cursor: pointer;
             padding: 5px;
             border-radius: 3px;
@@ -442,13 +492,13 @@
             display: none;
         }
         .bundle-sub-display {
-            background: #16202d !important;
+            background: var(--gg-deals-background, #16202d) !important;
             border-radius: 4px;
-            border: 1px solid #67c1f530;
+            border: 1px solid var(--gg-deals-border-color, #67c1f530);
             position: relative;
             z-index: 1;
         }
-        .game_area_purchase_game_wrapper + .bundle-sub-display {
+        .game_area_purchase_game + .bundle-sub-display {
             margin-top: -10px !important;
         }
         .bundle_contents_preview + .gg-deals-container {
@@ -475,6 +525,186 @@
             white-space: nowrap;
             flex-shrink: 0;
         }
+        .gg-api-key-input {
+            width: 100%;
+            padding: 6px 8px;
+            margin: 8px 0;
+            border: 1px solid var(--gg-deals-border-color, #67c1f530);
+            border-radius: 3px;
+            background: #121b28;
+            color: #fff;
+            font-size: 12px;
+            box-sizing: border-box;
+        }
+        .gg-region-select {
+            width: 100%;
+            padding: 6px 8px;
+            margin: 8px 0;
+            border: 1px solid var(--gg-deals-border-color, #67c1f530);
+            border-radius: 3px;
+            background: #121b28;
+            color: #fff;
+            font-size: 12px;
+            box-sizing: border-box;
+        }
+        .gg-settings-section {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--gg-deals-border-color, rgba(103, 193, 245, 0.1));
+        }
+        .gg-settings-title {
+            color: var(--gg-deals-official-text, #67c1f5);
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+        .gg-settings-content {
+            width: 270px !important;
+            max-width: 270px !important;
+        }
+        .gg-api-status {
+            font-size: 11px;
+            margin-top: 4px;
+        }
+        .gg-api-status.active {
+            color: var(--gg-deals-best-price, #a4d007);
+        }
+        .gg-api-status.inactive {
+            color: #ff7b7b;
+        }
+        .gg-save-button {
+            background: var(--gg-deals-button-bg, linear-gradient(to right, #67c1f5 0%, #4a9bd5 100%));
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            color: var(--gg-deals-button-text, #fff);
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 5px;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+        .gg-save-button:hover {
+            background: var(--gg-deals-button-bg, linear-gradient(to right, #7dcbff 0%, #4a9bd5 100%));
+        }
+        .gg-api-key-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .gg-toggle-visibility {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--gg-deals-official-text, #67c1f5);
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            padding: 0;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .gg-toggle-visibility:hover {
+            opacity: 1;
+        }
+        .gg-toggle-visibility svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+        
+        /* Color picker styles */
+        .gg-color-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin: 10px 0;
+        }
+        .gg-color-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .gg-color-label {
+            font-size: 11px;
+            color: var(--gg-deals-official-text, #67c1f5);
+        }
+        .gg-color-input {
+            width: 100%;
+            height: 24px;
+            border: 1px solid var(--gg-deals-border-color, #67c1f530);
+            border-radius: 3px;
+            background: none;
+            cursor: pointer;
+        }
+        .gg-reset-colors {
+            background: none;
+            border: 1px solid var(--gg-deals-border-color, #67c1f530);
+            padding: 5px 10px;
+            border-radius: 3px;
+            color: var(--gg-deals-official-text, #67c1f5);
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 5px;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+        .gg-reset-colors:hover {
+            background: rgba(103, 193, 245, 0.1);
+        }
+    /* New styles for full view controls layout */
+    .gg-deals-container:not(.compact) .gg-controls {
+        display: flex;
+        flex-direction: column; /* Main sections stacked */
+        gap: 20px; /* Increased gap for better separation */
+        margin-top: 20px; /* Increased margin */
+        padding-top: 15px;
+        border-top: 1px solid var(--gg-deals-border-color, rgba(103, 193, 245, 0.1));
+        align-items: stretch; /* Allow children to define their own width fully */
+    }
+
+    .gg-deals-container:not(.compact) .gg-main-actions {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+
+    .gg-deals-container:not(.compact) .gg-main-actions .gg-view-offers {
+        flex-grow: 1; /* Takes available space */
+        width: auto; /* Override general width: 100% for flex context */
+    }
+    
+    .gg-deals-container:not(.compact) .gg-main-actions .gg-refresh {
+        flex-shrink: 0; /* Prevent refresh icon from shrinking */
+    }
+
+    .gg-deals-container:not(.compact) .gg-settings-panels {
+        display: flex;
+        flex-direction: row;
+        gap: 15px;
+        flex-wrap: wrap; /* Allow panels to wrap to next line if not enough space */
+    }
+
+    .gg-deals-container:not(.compact) .gg-settings-panels .gg-settings-section {
+        flex: 1 1 240px; /* Grow, Shrink, Basis */
+        padding: 15px;
+        border: 1px solid var(--gg-deals-border-color);
+        border-radius: 4px;
+        background: rgba(0,0,0,0.05); /* Slightly lighter background for panels */
+        margin-bottom: 0; 
+        /* border-bottom property from general .gg-settings-section will be overridden by the border property here */
+    }
+    
+    .gg-deals-container:not(.compact) .gg-settings-panels .gg-settings-title { /* More specific selector for title */
+        margin-bottom: 12px;
+        font-weight: bold;
+        color: var(--gg-deals-official-text); 
+    }
+    /* End of new styles */
     `);
 
   // Get saved toggle states or set defaults
@@ -482,68 +712,351 @@
     official: GM_getValue("showOfficial", true),
     keyshop: GM_getValue("showKeyshop", true),
     compact: GM_getValue("compactView", false),
-    subDisplay: GM_getValue("showSubDisplay", true)
+    subDisplay: GM_getValue("showSubDisplay", true),
+    useApi: GM_getValue("useApi", false),
+    enableScraping: GM_getValue("enableScraping", true)
   };
+  
+  // Force set enableScraping in GM storage if it doesn't exist yet
+  if (GM_getValue("enableScraping") === undefined) {
+    GM_setValue("enableScraping", true);
+    console.log("GG.deals: Initializing enableScraping setting to true");
+  }
+  
+  // Get API key if saved
+  const apiKey = GM_getValue("apiKey", "");
+  
+  // Get preferred region/currency (default: us)
+  const preferredRegion = GM_getValue("preferredRegion", "us");
+  
+  // Available regions for API
+  const availableRegions = [
+    { code: "us", name: "USA (USD)" },
+    { code: "gb", name: "UK (GBP)" },
+    { code: "eu", name: "Europe (EUR)" },
+    { code: "ca", name: "Canada (CAD)" },
+    { code: "au", name: "Australia (AUD)" },
+    { code: "br", name: "Brazil (BRL)" },
+    { code: "ru", name: "Russia (RUB)" },
+    { code: "tr", name: "Turkey (TRY)" },
+    { code: "pl", name: "Poland (PLN)" },
+    { code: "de", name: "Germany (EUR)" },
+    { code: "fr", name: "France (EUR)" },
+    { code: "es", name: "Spain (EUR)" },
+    { code: "it", name: "Italy (EUR)" },
+    { code: "ch", name: "Switzerland (CHF)" },
+    { code: "nl", name: "Netherlands (EUR)" },
+    { code: "se", name: "Sweden (SEK)" },
+    { code: "no", name: "Norway (NOK)" },
+    { code: "dk", name: "Denmark (DKK)" },
+    { code: "fi", name: "Finland (EUR)" },
+    { code: "ie", name: "Ireland (EUR)" },
+    { code: "be", name: "Belgium (EUR)" }
+  ];
+
+  // Apply custom colors on script load
+  applyCustomColors();
 
   // Cache configuration
   const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
   const RATE_LIMIT_DELAY = 2000; // 2 seconds between requests
   const MAX_RETRIES = 1;
+  
+  // Global variables for easy access
+  window.ggDealsApiKey = apiKey;
+  window.ggDealsRegion = preferredRegion;
 
-  // Cache structure with force refresh option
+  // In-memory cache to reduce GM_getValue calls
+  const memoryCache = {};
+
+  // Cache structure with force refresh option and memory caching
   const priceCache = {
     get: function (key, forceRefresh = false) {
       if (forceRefresh) {
+        // Clear both memory and persistent cache
+        delete memoryCache[key];
         GM_setValue(`cache_${key}`, "");
         return null;
       }
 
+      // Check memory cache first for better performance
+      if (memoryCache[key]) {
+        const { data, timestamp } = memoryCache[key];
+        if (Date.now() - timestamp <= CACHE_EXPIRY) {
+          return data;
+        }
+        // Expired cache, remove from memory
+        delete memoryCache[key];
+      }
+
+      // Otherwise check persistent storage
       const cached = GM_getValue(`cache_${key}`);
       if (!cached) return null;
 
-      const { data, timestamp } = JSON.parse(cached);
-      if (Date.now() - timestamp > CACHE_EXPIRY) {
+      try {
+        const cacheObject = JSON.parse(cached);
+        const { data, timestamp, source } = cacheObject;
+        
+        if (Date.now() - timestamp > CACHE_EXPIRY) {
+          // Expired cache, clear it
+          GM_setValue(`cache_${key}`, "");
+          return null;
+        }
+        
+        // Store in memory cache for future access
+        memoryCache[key] = { data, timestamp, source };
+        return data;
+      } catch (e) {
+        // Invalid cache data
+        console.warn(`GG.deals: Invalid cache data for ${key}`, e);
         GM_setValue(`cache_${key}`, "");
         return null;
       }
-      return data;
     },
-    set: function (key, data) {
-      const cacheData = {
+    set: function (key, data, source = "web") {
+      if (!data) return; // Don't cache null/undefined data
+      
+      const cacheObject = {
         data: data,
         timestamp: Date.now(),
+        source: source
       };
-      GM_setValue(`cache_${key}`, JSON.stringify(cacheData));
+      
+      // Update memory cache
+      memoryCache[key] = cacheObject;
+      
+      // Update persistent storage
+      GM_setValue(`cache_${key}`, JSON.stringify(cacheObject));
+      
+      // Periodically clean old cache entries
+      this.cleanExpiredEntries();
     },
     getTimestamp: function (key) {
+      // Check memory cache first
+      if (memoryCache[key]) {
+        return memoryCache[key].timestamp;
+      }
+      
       const cached = GM_getValue(`cache_${key}`);
       if (!cached) return null;
-      return JSON.parse(cached).timestamp;
+      
+      try {
+        return JSON.parse(cached).timestamp;
+      } catch (e) {
+        return null;
+      }
     },
+    getSource: function (key) {
+      // Check memory cache first
+      if (memoryCache[key]) {
+        return memoryCache[key].source;
+      }
+      
+      const cached = GM_getValue(`cache_${key}`);
+      if (!cached) return null;
+      
+      try {
+        return JSON.parse(cached).source;
+      } catch (e) {
+        return null;
+      }
+    },
+    // Method to clean expired entries (runs occasionally)
+    cleanExpiredEntries: function() {
+      // Only run cleanup occasionally (1 in 10 chance)
+      if (Math.random() < 0.1) {
+        const now = Date.now();
+        
+        // Clean memory cache
+        Object.keys(memoryCache).forEach(key => {
+          if (now - memoryCache[key].timestamp > CACHE_EXPIRY) {
+            delete memoryCache[key];
+          }
+        });
+        
+        // We could do this for GM storage but it's expensive to enumerate all keys
+        // Let individual expired entries be cleared on access instead
+      }
+    }
   };
 
-  // Rate limiter with cross-tab synchronization
+  // Rate limiter with memory-based tracking and cross-tab synchronization
+  const requestTracker = {
+    lastRequestTime: 0,
+    activeRequests: {}
+  };
+  
   async function rateLimitedRequest(url) {
     const now = Date.now();
-    const lastRequest = GM_getValue("lastRequestTime", 0);
-    const timeToWait = Math.max(0, RATE_LIMIT_DELAY - (now - lastRequest));
+    const urlHash = url.split('?')[0]; // Base URL without params for tracking
+    
+    // Check if we have an active request for this URL
+    if (requestTracker.activeRequests[urlHash]) {
+      const activeRequest = requestTracker.activeRequests[urlHash];
+      try {
+        // Reuse the existing request
+        console.log(`GG.deals: Reusing in-flight request for ${urlHash}`);
+        return await activeRequest;
+      } catch (error) {
+        // If the existing request failed, continue with a new one
+        console.warn(`GG.deals: Reused request failed, trying again: ${error}`);
+      }
+    }
+    
+    // Get last request time from global storage (shared between tabs)
+    const storedLastRequest = GM_getValue("lastRequestTime", 0);
+    requestTracker.lastRequestTime = Math.max(requestTracker.lastRequestTime, storedLastRequest);
+    
+    const timeToWait = Math.max(0, RATE_LIMIT_DELAY - (now - requestTracker.lastRequestTime));
 
     if (timeToWait > 0) {
       await new Promise((resolve) => setTimeout(resolve, timeToWait));
     }
 
-    GM_setValue("lastRequestTime", Date.now());
+    // Update both local tracker and global storage
+    requestTracker.lastRequestTime = Date.now();
+    GM_setValue("lastRequestTime", requestTracker.lastRequestTime);
 
-    return new Promise((resolve, reject) => {
+    // Create a new request
+    const requestPromise = new Promise((resolve, reject) => {
       GM_xmlhttpRequest({
         method: "GET",
         url: url,
         timeout: 10000,
-        onload: resolve,
-        onerror: reject,
-        ontimeout: reject,
+        onload: (response) => {
+          // Clear the tracked request when done
+          delete requestTracker.activeRequests[urlHash];
+          resolve(response);
+        },
+        onerror: (error) => {
+          // Clear the tracked request when failed
+          delete requestTracker.activeRequests[urlHash];
+          reject(error);
+        },
+        ontimeout: (error) => {
+          // Clear the tracked request when timed out
+          delete requestTracker.activeRequests[urlHash];
+          reject(error);
+        }
       });
     });
+    
+    // Track this request
+    requestTracker.activeRequests[urlHash] = requestPromise;
+    
+    return requestPromise;
+  }
+
+  // New function to fetch data using GG.deals API
+  async function fetchGamePricesApi(steamId, steamType) {
+    // Check for valid API key
+    const apiKey = GM_getValue("apiKey", "");
+    if (!apiKey) {
+      throw new Error("No API key provided");
+    }
+    
+    // Get preferred region
+    const region = GM_getValue("preferredRegion", "us");
+
+    // Set up the API URL based on the steam type
+    let apiUrl;
+    if (steamType === 'sub') {
+      apiUrl = `https://api.gg.deals/v1/prices/by-steam-sub-id/?ids=${steamId}&key=${apiKey}&region=${region}`;
+    } else {
+      apiUrl = `https://api.gg.deals/v1/prices/by-steam-app-id/?ids=${steamId}&key=${apiKey}&region=${region}`;
+    }
+    
+    try {
+      const response = await rateLimitedRequest(apiUrl);
+      
+      // Check for successful response
+      if (response.status !== 200) {
+        throw new Error(`API returned status ${response.status}`);
+      }
+      
+      // Parse the JSON response
+      const jsonData = JSON.parse(response.responseText);
+      
+      // Check for successful API response
+      if (!jsonData.success) {
+        throw new Error(jsonData.data?.message || "API error");
+      }
+      
+      // Check if data exists for this game
+      if (!jsonData.data || !jsonData.data[steamId]) {
+        throw new Error("No data found for this game");
+      }
+      
+      const gameData = jsonData.data[steamId];
+      
+      // Handle case where game is not found in API
+      if (gameData === null) {
+        throw new Error("Game not found in GG.deals database");
+      }
+      
+      // Get currency symbol based on region
+      const currencySymbols = {
+        us: "$", eu: "€", gb: "£", ca: "CA$", au: "A$", br: "R$", 
+        ru: "₽", tr: "₺", pl: "zł", fr: "€", de: "€", es: "€", 
+        it: "€", ch: "CHF", nl: "€", se: "kr", no: "kr", dk: "kr", 
+        fi: "€", ie: "€", be: "€"
+      };
+      const currencySymbol = currencySymbols[region] || gameData.prices.currency || "";
+      
+      // Format prices with currency symbol
+      const formatPrice = (price) => {
+        if (!price) return "No data";
+        // Check if currency is before or after the number based on region
+        if (["us", "ca", "au", "br"].includes(region)) {
+          return `${currencySymbol}${price}`;
+        } else {
+          return `${price}${currencySymbol}`;
+        }
+      };
+      
+      // Format the data to match our expected structure
+      const formattedData = {
+        officialPrice: formatPrice(gameData.prices.currentRetail),
+        keyshopPrice: formatPrice(gameData.prices.currentKeyshops),
+        historicalData: [],
+        lowestPriceType: null,
+        url: gameData.url,
+        isCorrectGame: true
+      };
+      
+      // Add historical data if available
+      if (gameData.prices.historicalRetail) {
+        formattedData.historicalData.push({
+          type: "official",
+          price: gameData.prices.historicalRetail,
+          historical: `Historical Low: ${formatPrice(gameData.prices.historicalRetail)}`
+        });
+      }
+      
+      if (gameData.prices.historicalKeyshops) {
+        formattedData.historicalData.push({
+          type: "keyshop",
+          price: gameData.prices.historicalKeyshops,
+          historical: `Historical Low: ${formatPrice(gameData.prices.historicalKeyshops)}`
+        });
+      }
+      
+      // Determine lowest price type
+      if (gameData.prices.currentRetail && gameData.prices.currentKeyshops) {
+        const officialPriceNum = parseFloat(gameData.prices.currentRetail);
+        const keyshopPriceNum = parseFloat(gameData.prices.currentKeyshops);
+        formattedData.lowestPriceType = officialPriceNum <= keyshopPriceNum ? "official" : "keyshop";
+      } else if (gameData.prices.currentRetail) {
+        formattedData.lowestPriceType = "official";
+      } else if (gameData.prices.currentKeyshops) {
+        formattedData.lowestPriceType = "keyshop";
+      }
+      
+      return formattedData;
+    } catch (error) {
+      console.error("GG.deals API error:", error);
+      throw error;
+    }
   }
 
   function createPriceContainer() {
@@ -590,26 +1103,107 @@
                     <div class="gg-settings-dropdown">
                         <div class="gg-icon-button gg-settings-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                                <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98 0 .33.03.65.07.97l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65z"/>
+                                <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69-.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98 0 .33.03.65.07.97l-2.11 1.65c-.19.15-.24.42-.12-.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65z"/>
                             </svg>
                         </div>
                         <div class="gg-settings-content">
-                            <label class="gg-toggle ${toggleStates.official ? "active" : ""}" title="Toggle Official Stores">
-                                <input type="checkbox" id="gg-toggle-official-compact" ${toggleStates.official ? "checked" : ""}>
-                                <label>Official</label>
-                            </label>
-                            <label class="gg-toggle ${toggleStates.keyshop ? "active" : ""}" title="Toggle Keyshops">
-                                <input type="checkbox" id="gg-toggle-keyshop-compact" ${toggleStates.keyshop ? "checked" : ""}>
-                                <label>Keyshops</label>
-                            </label>
-                            <label class="gg-toggle ${toggleStates.compact ? "active" : ""}" title="Toggle Compact View">
-                                <input type="checkbox" id="gg-toggle-compact-menu" ${toggleStates.compact ? "checked" : ""}>
-                                <label>Compact</label>
-                            </label>
-                            <label class="gg-toggle ${toggleStates.subDisplay ? "active" : ""}" title="Toggle Sub/Bundle Displays">
-                                <input type="checkbox" id="gg-toggle-sub-display-compact" ${toggleStates.subDisplay ? "checked" : ""}>
-                                <label>Bundle Display</label>
-                            </label>
+                            <div class="gg-settings-section">
+                                <div class="gg-settings-title">Display Options</div>
+                                <label class="gg-toggle ${toggleStates.official ? "active" : ""}" title="Toggle Official Stores">
+                                    <input type="checkbox" id="gg-toggle-official-compact" ${toggleStates.official ? "checked" : ""}>
+                                    <label>Official</label>
+                                </label>
+                                <label class="gg-toggle ${toggleStates.keyshop ? "active" : ""}" title="Toggle Keyshops">
+                                    <input type="checkbox" id="gg-toggle-keyshop-compact" ${toggleStates.keyshop ? "checked" : ""}>
+                                    <label>Keyshops</label>
+                                </label>
+                                <label class="gg-toggle ${toggleStates.compact ? "active" : ""}" title="Toggle Compact View">
+                                    <input type="checkbox" id="gg-toggle-compact-menu" ${toggleStates.compact ? "checked" : ""}>
+                                    <label>Compact</label>
+                                </label>
+                                <label class="gg-toggle ${toggleStates.subDisplay ? "active" : ""}" title="Toggle Sub/Bundle Displays">
+                                    <input type="checkbox" id="gg-toggle-sub-display-compact" ${toggleStates.subDisplay ? "checked" : ""}>
+                                    <label>Bundle Display</label>
+                                </label>
+                                <label class="gg-toggle ${toggleStates.enableScraping ? "active" : ""}" title="Enable/disable web scraping for non-API requests">
+                                    <input type="checkbox" id="gg-toggle-enable-scraping-compact" ${toggleStates.enableScraping ? "checked" : ""}>
+                                    <label>Enable Scraping</label>
+                                </label>
+                            </div>
+                            <div class="gg-settings-section">
+                                <div class="gg-settings-title">API Settings</div>
+                                <label class="gg-toggle ${toggleStates.useApi ? "active" : ""}" title="Use GG.deals API">
+                                    <input type="checkbox" id="gg-toggle-use-api-compact" ${toggleStates.useApi ? "checked" : ""}>
+                                    <label>Use API</label>
+                                </label>
+                                <div>
+                                    <div class="gg-api-key-wrapper">
+                                        <input type="password" id="gg-api-key-compact" class="gg-api-key-input" 
+                                               placeholder="Enter your GG.deals API key" value="${apiKey}">
+                                        <button type="button" class="gg-toggle-visibility" title="Show/Hide API Key">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <select id="gg-region-select-compact" class="gg-region-select">
+                                        ${availableRegions.map(region => 
+                                            `<option value="${region.code}" ${region.code === preferredRegion ? 'selected' : ''}>${region.name}</option>`
+                                        ).join('')}
+                                    </select>
+                                    <div class="gg-api-status ${apiKey && toggleStates.useApi ? "active" : "inactive"}">
+                                        API: ${apiKey && toggleStates.useApi ? "Active" : "Inactive"}
+                                    </div>
+                                    <button id="gg-save-api-key-compact" class="gg-save-button">Save Settings</button>
+                                </div>
+                            </div>
+                            <div class="gg-settings-section">
+                                <div class="gg-settings-title">Color Settings</div>
+                                <div class="gg-color-grid">
+                                    <div class="gg-color-item">
+                                        <div class="gg-color-label">Background</div>
+                                        <input type="color" id="gg-color-background-compact" class="gg-color-input" value="${savedColors.background}">
+                                    </div>
+                                    <div class="gg-color-item">
+                                        <div class="gg-color-label">Header Background</div>
+                                        <input type="color" id="gg-color-header-bg-compact" class="gg-color-input" value="${savedColors.headerBackground}">
+                                    </div>
+                                    <div class="gg-color-item">
+                                        <div class="gg-color-label">Official Text</div>
+                                        <input type="color" id="gg-color-official-text-compact" class="gg-color-input" value="${savedColors.officialText}">
+                                    </div>
+                                    <div class="gg-color-item">
+                                        <div class="gg-color-label">Official Price</div>
+                                        <input type="color" id="gg-color-official-price-compact" class="gg-color-input" value="${savedColors.officialPrice}">
+                                    </div>
+                                    <div class="gg-color-item">
+                                        <div class="gg-color-label">Keyshop Text</div>
+                                        <input type="color" id="gg-color-keyshop-text-compact" class="gg-color-input" value="${savedColors.keyshopText}">
+                                    </div>
+                                     <div class="gg-color-item">
+                                        <div class="gg-color-label">Keyshop Price</div>
+                                        <input type="color" id="gg-color-keyshop-price-compact" class="gg-color-input" value="${savedColors.keyshopPrice}">
+                                    </div>
+                                    <div class="gg-color-item">
+                                        <div class="gg-color-label">Best Price</div>
+                                        <input type="color" id="gg-color-best-price-compact" class="gg-color-input" value="${savedColors.bestPrice}">
+                                    </div>
+                                    <div class="gg-color-item">
+                                        <div class="gg-color-label">Button Background</div>
+                                        <input type="text" id="gg-color-button-bg-compact" class="gg-api-key-input" value="${savedColors.buttonBackground}">
+                                    </div>
+                                    <div class="gg-color-item">
+                                        <div class="gg-color-label">Button Text</div>
+                                        <input type="color" id="gg-color-button-text-compact" class="gg-color-input" value="${savedColors.buttonText}">
+                                    </div>
+                                    <div class="gg-color-item">
+                                        <div class="gg-color-label">Border Color</div>
+                                        <input type="color" id="gg-color-border-compact" class="gg-color-input" value="${savedColors.borderColor.replace('30', '')}">
+                                    </div>
+                                </div>
+                                <button id="gg-save-colors-compact" class="gg-save-button">Save Colors</button>
+                                <button id="gg-reset-colors-compact" class="gg-reset-colors">Reset to Default</button>
+                            </div>
                         </div>
                     </div>
                     <a href="#" target="_blank" class="gg-view-offers">View Offers</a>
@@ -646,31 +1240,127 @@
                 </div>
             </div>
             <div class="gg-controls">
-                <label class="gg-toggle ${toggleStates.official ? "active" : ""}" title="Toggle Official Stores">
-                    <input type="checkbox" id="gg-toggle-official" ${toggleStates.official ? "checked" : ""}>
-                    <label>Official</label>
-                </label>
-                <label class="gg-toggle ${toggleStates.keyshop ? "active" : ""}" title="Toggle Keyshops">
-                    <input type="checkbox" id="gg-toggle-keyshop" ${toggleStates.keyshop ? "checked" : ""}>
-                    <label>Keyshops</label>
-                </label>
-                <label class="gg-toggle ${toggleStates.compact ? "active" : ""}" title="Toggle Compact View">
-                    <input type="checkbox" id="gg-toggle-compact" ${toggleStates.compact ? "checked" : ""}>
-                    <label>Compact</label>
-                </label>
-                <label class="gg-toggle ${toggleStates.subDisplay ? "active" : ""}" title="Toggle Sub/Bundle Displays">
-                    <input type="checkbox" id="gg-toggle-sub-display" ${toggleStates.subDisplay ? "checked" : ""}>
-                    <label>Bundle Display</label>
-                </label>
-                <button class="gg-icon-button gg-refresh" title="Refresh Prices">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    <span class="gg-tooltip-text">Click to refresh prices</span>
-                </button>
-                <a href="#" target="_blank" class="gg-view-offers">View Offers</a>
+                <div class="gg-main-actions">
+                    <a href="#" target="_blank" class="gg-view-offers">View Offers</a>
+                    <button class="gg-icon-button gg-refresh" title="Refresh Prices">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span class="gg-tooltip-text">Click to refresh prices</span>
+                    </button>
+                </div>
+                <div class="gg-settings-panels">
+                    <div class="gg-settings-section">
+                        <div class="gg-settings-title">Display Options</div>
+                        <label class="gg-toggle ${toggleStates.official ? "active" : ""}" title="Toggle Official Stores">
+                            <input type="checkbox" id="gg-toggle-official" ${toggleStates.official ? "checked" : ""}>
+                            <label>Official</label>
+                        </label>
+                        <label class="gg-toggle ${toggleStates.keyshop ? "active" : ""}" title="Toggle Keyshops">
+                            <input type="checkbox" id="gg-toggle-keyshop" ${toggleStates.keyshop ? "checked" : ""}>
+                            <label>Keyshops</label>
+                        </label>
+                        <label class="gg-toggle ${toggleStates.compact ? "active" : ""}" title="Toggle Compact View">
+                            <input type="checkbox" id="gg-toggle-compact" ${toggleStates.compact ? "checked" : ""}>
+                            <label>Compact</label>
+                        </label>
+                        <label class="gg-toggle ${toggleStates.subDisplay ? "active" : ""}" title="Toggle Sub/Bundle Displays">
+                            <input type="checkbox" id="gg-toggle-sub-display" ${toggleStates.subDisplay ? "checked" : ""}>
+                            <label>Bundle Display</label>
+                        </label>
+                        <label class="gg-toggle ${toggleStates.enableScraping ? "active" : ""}" title="Enable/disable web scraping for non-API requests">
+                            <input type="checkbox" id="gg-toggle-enable-scraping" ${toggleStates.enableScraping ? "checked" : ""}>
+                            <label>Enable Scraping</label>
+                        </label>
+                    </div>
+                    <div class="gg-settings-section">
+                        <div class="gg-settings-title">API Settings</div>
+                        <label class="gg-toggle ${toggleStates.useApi ? "active" : ""}" title="Use GG.deals API">
+                            <input type="checkbox" id="gg-toggle-use-api" ${toggleStates.useApi ? "checked" : ""}>
+                            <label>Use API</label>
+                        </label>
+                        <div>
+                            <div class="gg-api-key-wrapper">
+                                <input type="password" id="gg-api-key" class="gg-api-key-input" 
+                                       placeholder="Enter your GG.deals API key" value="${apiKey}">
+                                <button type="button" class="gg-toggle-visibility" title="Show/Hide API Key">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <select id="gg-region-select" class="gg-region-select">
+                                ${availableRegions.map(region => 
+                                    `<option value="${region.code}" ${region.code === preferredRegion ? 'selected' : ''}>${region.name}</option>`
+                                ).join('')}
+                            </select>
+                            <div class="gg-api-status ${apiKey && toggleStates.useApi ? "active" : "inactive"}">
+                                API: ${apiKey && toggleStates.useApi ? "Active" : "Inactive"}
+                            </div>
+                            <button id="gg-save-api-key" class="gg-save-button">Save Settings</button>
+                        </div>
+                    </div>
+                    <div class="gg-settings-section">
+                        <div class="gg-settings-title">Color Settings</div>
+                        <div class="gg-color-grid">
+                            <div class="gg-color-item">
+                                <div class="gg-color-label">Background</div>
+                                <input type="color" id="gg-color-background" class="gg-color-input" value="${savedColors.background}">
+                            </div>
+                            <div class="gg-color-item">
+                                <div class="gg-color-label">Header Background</div>
+                                <input type="color" id="gg-color-header-bg" class="gg-color-input" value="${savedColors.headerBackground}">
+                            </div>
+                            <div class="gg-color-item">
+                                <div class="gg-color-label">Official Text</div>
+                                <input type="color" id="gg-color-official-text" class="gg-color-input" value="${savedColors.officialText}">
+                            </div>
+                            <div class="gg-color-item">
+                                <div class="gg-color-label">Official Price</div>
+                                <input type="color" id="gg-color-official-price" class="gg-color-input" value="${savedColors.officialPrice}">
+                            </div>
+                            <div class="gg-color-item">
+                                <div class="gg-color-label">Keyshop Text</div>
+                                <input type="color" id="gg-color-keyshop-text" class="gg-color-input" value="${savedColors.keyshopText}">
+                            </div>
+                             <div class="gg-color-item">
+                                <div class="gg-color-label">Keyshop Price</div>
+                                <input type="color" id="gg-color-keyshop-price" class="gg-color-input" value="${savedColors.keyshopPrice}">
+                            </div>
+                            <div class="gg-color-item">
+                                <div class="gg-color-label">Best Price</div>
+                                <input type="color" id="gg-color-best-price" class="gg-color-input" value="${savedColors.bestPrice}">
+                            </div>
+                             <div class="gg-color-item">
+                                <div class="gg-color-label">Button Background</div>
+                                <input type="text" id="gg-color-button-bg" class="gg-api-key-input" value="${savedColors.buttonBackground}">
+                            </div>
+                            <div class="gg-color-item">
+                                <div class="gg-color-label">Button Text</div>
+                                <input type="color" id="gg-color-button-text" class="gg-color-input" value="${savedColors.buttonText}">
+                            </div>
+                            <div class="gg-color-item">
+                                <div class="gg-color-label">Border Color</div>
+                                <input type="color" id="gg-color-border" class="gg-color-input" value="${savedColors.borderColor.replace('30', '')}">
+                            </div>
+                        </div>
+                        <button id="gg-save-colors" class="gg-save-button">Save Colors</button>
+                        <button id="gg-reset-colors" class="gg-reset-colors">Reset to Default</button>
+                    </div>
+                </div>
             </div>
-            <div class="gg-attribution">Extension by <a href="https://steamcommunity.com/profiles/76561199186030286">Crimsab</a> <a href="https://github.com/Crimsab/ggdeals-steam-companion" title="View on GitHub"><svg class="github-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg></a> · Data by <a href="https://gg.deals">gg.deals</a></div>
+            <div class="gg-attribution">
+        Extension by <a href="https://steamcommunity.com/profiles/76561199186030286">Crimsab</a> 
+        <a href="https://github.com/Crimsab/ggdeals-steam-companion" title="View on GitHub">
+            <svg class="github-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+        </a> · 
+        Data by <a href="https://gg.deals">gg.deals</a>
+        <span id="gg-api-indicator" class="gg-api-status ${toggleStates.useApi && apiKey ? "active" : "inactive"}" style="margin-left: 5px; display: inline-block;">
+            ${toggleStates.useApi && apiKey ? "· API Active" : ""}
+        </span>
+    </div>
         `;
 
     // Add toggle listeners for both sets of controls
@@ -692,6 +1382,12 @@
       toggleStates[type] = checked;
       if (type === "compact") {
         GM_setValue("compactView", checked);
+      } else if (type === "useApi") {
+        GM_setValue("useApi", checked);
+      } else if (type === "enableScraping") {
+        // Make sure to explicitly save enableScraping setting
+        GM_setValue("enableScraping", checked);
+        console.log(`GG.deals: Saving enableScraping = ${checked}`);
       } else {
         GM_setValue(`show${type.charAt(0).toUpperCase() + type.slice(1)}`, checked);
       }
@@ -719,7 +1415,7 @@
       }
 
       // Update all related toggle buttons
-      container.querySelectorAll(`input[id*=toggle-${type}]`).forEach((input) => {
+      document.querySelectorAll(`input[id*=toggle-${type}]`).forEach((input) => {
         input.checked = checked;
         input.closest(".gg-toggle").classList.toggle("active", checked);
       });
@@ -756,6 +1452,253 @@
         toggle.addEventListener("change", (e) => updateToggleState("subDisplay", e.target.checked));
       }
     });
+    
+    // Add web scraping toggle event listeners
+    const toggleEnableScraping = container.querySelector("#gg-toggle-enable-scraping");
+    const toggleEnableScrapingCompact = container.querySelector("#gg-toggle-enable-scraping-compact");
+    [toggleEnableScraping, toggleEnableScrapingCompact].forEach((toggle) => {
+      if (toggle) {
+        toggle.addEventListener("change", (e) => {
+          updateToggleState("enableScraping", e.target.checked);
+        });
+      }
+    });
+    
+    // Add API toggle event listeners
+    const toggleUseApi = container.querySelector("#gg-toggle-use-api");
+    const toggleUseApiCompact = container.querySelector("#gg-toggle-use-api-compact");
+    [toggleUseApi, toggleUseApiCompact].forEach((toggle) => {
+      if (toggle) {
+        toggle.addEventListener("change", (e) => {
+          updateToggleState("useApi", e.target.checked);
+          // Update API status text in settings
+          document.querySelectorAll('.gg-api-status:not(#gg-api-indicator)').forEach(status => {
+            status.classList.toggle('active', e.target.checked && apiKey);
+            status.classList.toggle('inactive', !e.target.checked || !apiKey);
+            status.textContent = `API: ${e.target.checked && apiKey ? "Active" : "Inactive"}`;
+          });
+          
+          // Update API indicator in attribution
+          const apiIndicator = document.getElementById('gg-api-indicator');
+          if (apiIndicator) {
+            apiIndicator.classList.toggle('active', e.target.checked && apiKey);
+            apiIndicator.classList.toggle('inactive', !e.target.checked || !apiKey);
+            apiIndicator.textContent = e.target.checked && apiKey ? "· API Active" : "";
+          }
+        });
+      }
+    });
+    
+    // Add API key visibility toggle listeners
+    const toggleVisibilityBtns = container.querySelectorAll(".gg-toggle-visibility");
+    toggleVisibilityBtns.forEach(btn => {
+      if (btn) {
+        btn.addEventListener("click", (e) => {
+          // Stop event propagation to prevent closing the settings dropdown
+          e.stopPropagation();
+          // Find the corresponding input field (sibling of parent element)
+          const inputField = btn.closest(".gg-api-key-wrapper").querySelector(".gg-api-key-input");
+          if (inputField) {
+            // Toggle between password and text type
+            inputField.type = inputField.type === "password" ? "text" : "password";
+            
+            // Update the icon to reflect the current state
+            const eyeIcon = btn.querySelector("svg");
+            if (eyeIcon) {
+              if (inputField.type === "password") {
+                // Show the "eye" icon to indicate the user can click to show the password
+                eyeIcon.innerHTML = '<path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>';
+              } else {
+                // Show the "eye-off" icon to indicate the user can click to hide the password
+                eyeIcon.innerHTML = '<path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>';
+              }
+            }
+          }
+        });
+      }
+    });
+    
+    // Add save API key button event listeners
+    const saveApiKeyBtn = container.querySelector("#gg-save-api-key");
+    const saveApiKeyBtnCompact = container.querySelector("#gg-save-api-key-compact");
+    const apiKeyInput = container.querySelector("#gg-api-key");
+    const apiKeyInputCompact = container.querySelector("#gg-api-key-compact");
+    const regionSelect = container.querySelector("#gg-region-select");
+    const regionSelectCompact = container.querySelector("#gg-region-select-compact");
+    
+    [saveApiKeyBtn, saveApiKeyBtnCompact].forEach(btn => {
+      if (btn) {
+        btn.addEventListener("click", () => {
+          // Get value from the inputs in the same container
+          const isCompact = btn.id.includes('compact');
+          const input = isCompact ? apiKeyInputCompact : apiKeyInput;
+          const regionInput = isCompact ? regionSelectCompact : regionSelect;
+          const newApiKey = input.value.trim();
+          const newRegion = regionInput.value;
+          
+          // Save to both inputs
+          if (apiKeyInput) apiKeyInput.value = newApiKey;
+          if (apiKeyInputCompact) apiKeyInputCompact.value = newApiKey;
+          
+          // Update region selectors
+          if (regionSelect && regionSelectCompact) {
+            regionSelect.value = newRegion;
+            regionSelectCompact.value = newRegion;
+          }
+          
+          // Save to GM storage
+          GM_setValue("apiKey", newApiKey);
+          GM_setValue("preferredRegion", newRegion);
+          
+          // Update global variables
+          window.ggDealsApiKey = newApiKey;
+          window.ggDealsRegion = newRegion;
+          
+          // Clear cache to reflect updated region
+          document.querySelectorAll('.gg-deals-container').forEach(container => {
+            if (container.id) {
+              const match = container.id.match(/gg-deals-(app|sub|bundle)-(\d+)/);
+              if (match) {
+                const [, containerType, containerId] = match;
+                priceCache.get(`${containerType}_${containerId}`, true);
+              }
+            }
+          });
+          
+          // Update status in settings
+          document.querySelectorAll('.gg-api-status:not(#gg-api-indicator)').forEach(status => {
+            const isActive = toggleStates.useApi && newApiKey;
+            status.classList.toggle('active', isActive);
+            status.classList.toggle('inactive', !isActive);
+            status.textContent = `API: ${isActive ? "Active" : "Inactive"}`;
+          });
+          
+          // Update API indicator in attribution
+          const apiIndicator = document.getElementById('gg-api-indicator');
+          if (apiIndicator) {
+            const isActive = toggleStates.useApi && newApiKey;
+            apiIndicator.classList.toggle('active', isActive);
+            apiIndicator.classList.toggle('inactive', !isActive);
+            apiIndicator.textContent = isActive ? "· API Active" : "";
+          }
+          
+          // Refresh prices with new region
+          if (toggleStates.useApi && newApiKey) {
+            document.querySelectorAll('.gg-refresh').forEach(refreshBtn => {
+              refreshBtn.click();
+            });
+          }
+        });
+      }
+    });
+
+    // Add color setting event listeners
+    const saveColorsBtn = container.querySelector("#gg-save-colors");
+    const saveColorsBtnCompact = container.querySelector("#gg-save-colors-compact");
+    const resetColorsBtn = container.querySelector("#gg-reset-colors");
+    const resetColorsBtnCompact = container.querySelector("#gg-reset-colors-compact");
+    
+    // Function to get all color inputs
+    function getAllColorInputs(compact = false) {
+      const suffix = compact ? "-compact" : "";
+      return {
+        background: container.querySelector(`#gg-color-background${suffix}`),
+        headerBackground: container.querySelector(`#gg-color-header-bg${suffix}`),
+        officialText: container.querySelector(`#gg-color-official-text${suffix}`),
+        officialPrice: container.querySelector(`#gg-color-official-price${suffix}`),
+        keyshopText: container.querySelector(`#gg-color-keyshop-text${suffix}`),
+        keyshopPrice: container.querySelector(`#gg-color-keyshop-price${suffix}`), // Added keyshopPrice
+        bestPrice: container.querySelector(`#gg-color-best-price${suffix}`),
+        buttonBackground: container.querySelector(`#gg-color-button-bg${suffix}`), // Added buttonBackground
+        buttonText: container.querySelector(`#gg-color-button-text${suffix}`),
+        borderColor: container.querySelector(`#gg-color-border${suffix}`)
+      };
+    }
+    
+    // Function to save colors from a set of inputs
+    function saveColorsFromInputs(compact = false) {
+      const inputs = getAllColorInputs(compact);
+      const nonCompactInputs = getAllColorInputs(false);
+      const compactInputs = getAllColorInputs(true);
+      
+      // Get the values from the inputs
+      Object.keys(inputs).forEach(key => {
+        if (inputs[key]) {
+          let value = inputs[key].value;
+          
+          // Special handling for border color (add transparency)
+          if (key === 'borderColor') {
+            // Convert hex to hex with alpha
+            value = value.replace('#', '#') + '30';
+          }
+          
+          // Save to storage
+          savedColors[key] = value;
+          GM_setValue(`color_${key}`, value);
+          
+          // Update both sets of inputs
+          if (nonCompactInputs[key]) {
+            nonCompactInputs[key].value = inputs[key].value;
+          }
+          if (compactInputs[key]) {
+            compactInputs[key].value = inputs[key].value;
+          }
+        }
+      });
+      
+      // Apply the new colors
+      applyCustomColors();
+    }
+    
+    // Function to reset colors to default
+    function resetColorsToDefault() {
+      // Reset all colors to default
+      Object.keys(defaultColors).forEach(key => {
+        savedColors[key] = defaultColors[key];
+        GM_setValue(`color_${key}`, defaultColors[key]);
+      });
+      
+      // Update all inputs
+      const nonCompactInputs = getAllColorInputs(false);
+      const compactInputs = getAllColorInputs(true);
+      
+      Object.keys(defaultColors).forEach(key => {
+        let displayValue = defaultColors[key];
+        
+        // Special handling for border color (remove transparency for display)
+        // For button background, which is a text input, just use the value directly.
+        if (key === 'borderColor') {
+          displayValue = defaultColors[key].replace('30', '');
+        }
+        
+        if (nonCompactInputs[key]) {
+          nonCompactInputs[key].value = displayValue;
+        }
+        if (compactInputs[key]) {
+          compactInputs[key].value = displayValue;
+        }
+      });
+      
+      // Apply the default colors
+      applyCustomColors();
+    }
+    
+    // Add save colors button listeners
+    [saveColorsBtn, saveColorsBtnCompact].forEach(btn => {
+      if (btn) {
+        btn.addEventListener("click", () => {
+          const isCompact = btn.id.includes('compact');
+          saveColorsFromInputs(isCompact);
+        });
+      }
+    });
+    
+    // Add reset colors button listeners
+    [resetColorsBtn, resetColorsBtnCompact].forEach(btn => {
+      if (btn) {
+        btn.addEventListener("click", resetColorsToDefault);
+      }
+    });
 
     // Add refresh button listeners to both compact and full view buttons
     container.querySelectorAll(".gg-refresh").forEach(refreshButton => {
@@ -765,15 +1708,41 @@
         refreshButton.disabled = true;
 
         try {
-          const urlMatch = window.location.pathname.match(/\/(app|sub|bundle)\/(\d+)/);
-          if (urlMatch) {
-            const [, type, id] = urlMatch;
-            await fetchGamePrices(null, container.id, true, { type, id });
-            refreshText.textContent = "Updated just now";
-            setTimeout(() => {
-              refreshText.textContent = "";
-            }, 3000);
+          // First check if this container has its own ID/type information
+          let type, id;
+          
+          if (container.id) {
+            const containerMatch = container.id.match(/gg-deals-(app|sub|bundle)-(\d+)/);
+            if (containerMatch) {
+              [, type, id] = containerMatch;
+            }
           }
+          
+          // If no container-specific info, use the URL
+          if (!type || !id) {
+            const urlMatch = window.location.pathname.match(/\/(app|sub|bundle)\/(\d+)/);
+            if (urlMatch) {
+              [, type, id] = urlMatch;
+            } else {
+              throw new Error("Could not determine game ID");
+            }
+          }
+          
+          // Force a refresh by clearing the cache first
+          const cacheKey = `${type}_${id}`;
+          priceCache.get(cacheKey, true);
+          
+          // Fetch fresh data
+          await fetchGamePrices(null, container.id, true, { type, id });
+          
+          // Check the data source after update
+          const dataSource = priceCache.getSource(`${type}_${id}`) || "web";
+          const sourceText = dataSource === "api" ? "API" : "Web";
+          
+          refreshText.textContent = `Updated just now (via ${sourceText})`;
+          setTimeout(() => {
+            refreshText.textContent = "";
+          }, 3000);
         } catch (error) {
           console.error("Failed to refresh prices:", error);
           refreshText.textContent = "Refresh failed";
@@ -809,19 +1778,28 @@
       const [, type, id] = urlMatch;
       const timestamp = priceCache.getTimestamp(`${type}_${id}`);
       if (timestamp) {
-        // Update all refresh tooltips with the timestamp
-        container.querySelectorAll('.gg-refresh').forEach(refreshButton => {
-          const tooltipSpan = refreshButton.querySelector('.gg-tooltip-text');
-          if (tooltipSpan) {
-            const timeAgo = Math.floor((Date.now() - timestamp) / 60000); // minutes
-            if (timeAgo < 60) {
-              tooltipSpan.textContent = `Updated ${timeAgo}m ago`;
-            } else {
-              const hoursAgo = Math.floor(timeAgo / 60);
-              tooltipSpan.textContent = `Updated ${hoursAgo}h ago`;
+                  // Update all refresh tooltips with the timestamp and source
+          container.querySelectorAll('.gg-refresh').forEach(refreshButton => {
+            const tooltipSpan = refreshButton.querySelector('.gg-tooltip-text');
+            if (tooltipSpan) {
+              const timeAgo = Math.floor((Date.now() - timestamp) / 60000); // minutes
+              
+              // Get source of data (API or web scraping)
+              const source = priceCache.getSource(`${type}_${id}`) || "web";
+              const sourceText = source === "api" ? "API" : "Web";
+              
+              // Format time ago text
+              let timeText;
+              if (timeAgo < 60) {
+                timeText = `${timeAgo}m ago`;
+              } else {
+                const hoursAgo = Math.floor(timeAgo / 60);
+                timeText = `${hoursAgo}h ago`;
+              }
+              
+              tooltipSpan.textContent = `Updated ${timeText} (via ${sourceText})`;
             }
-          }
-        });
+          });
       }
     }
 
@@ -881,72 +1859,187 @@
     }
 
     const cacheKey = `${type}_${id}`;
-    const cachedData = priceCache.get(cacheKey, forceRefresh);
+    
+    // Track active requests to prevent duplicate requests for the same game
+    const pendingRequestKey = `pending_${cacheKey}`;
+    if (window[pendingRequestKey] && !forceRefresh) {
+        console.log(`GG.deals: Request for ${type} ${id} already in progress, waiting...`);
+        try {
+            await window[pendingRequestKey];
+            // After the pending request completes, get the cached data
+            const cachedAfterWait = priceCache.get(cacheKey);
+            if (cachedAfterWait) {
+                updatePriceDisplay(cachedAfterWait, containerId);
+                return;
+            }
+        } catch (error) {
+            console.warn(`GG.deals: Error waiting for pending request: ${error}`);
+            // Continue with a new request if the pending one failed
+        }
+    }
 
+    // Check cache before making any requests
+    const cachedData = priceCache.get(cacheKey, forceRefresh);
     if (cachedData) {
         updatePriceDisplay(cachedData, containerId);
         return;
     }
 
-    // If forcing refresh, clear cache for all containers on the page
-    if (forceRefresh) {
-        document.querySelectorAll('.gg-deals-container').forEach(container => {
-            if (container.id && container.id !== containerId) {
-                const match = container.id.match(/gg-deals-(app|sub|bundle)-(\d+)/);
-                if (match) {
-                    const [, containerType, containerId] = match;
-                    priceCache.get(`${containerType}_${containerId}`, true);
+    // Create a promise for this request that other potential duplicate requests can await
+    const requestPromise = (async () => {
+        try {
+            // If forcing refresh, clear cache for all containers on the page
+            if (forceRefresh) {
+                document.querySelectorAll('.gg-deals-container').forEach(container => {
+                    if (container.id && container.id !== containerId) {
+                        const match = container.id.match(/gg-deals-(app|sub|bundle)-(\d+)/);
+                        if (match) {
+                            const [, containerType, containerId] = match;
+                            priceCache.get(`${containerType}_${containerId}`, true);
+                        }
+                    }
+                });
+            }
+            
+            // Check if API should be used
+            const useApi = GM_getValue("useApi", false);
+            const apiKey = GM_getValue("apiKey", "");
+            const enableScraping = GM_getValue("enableScraping", true);
+            
+            // Try to use API if enabled and key is available
+            // Note: API works for app IDs and sub IDs, not bundle IDs
+            // Bundle pages always use web scraping regardless of API settings
+            if (useApi && apiKey && (type === 'app' || type === 'sub')) {
+                try {
+                    // Use the ID directly, whether it's an app or sub ID
+                    const itemId = id;
+                    console.log(`GG.deals: Using API to fetch prices for ${type} ${id}`);
+                    const data = await fetchGamePricesApi(itemId, type);
+                    if (data) {
+                        priceCache.set(cacheKey, data, "api");
+                        updatePriceDisplay(data, containerId);
+                        return;
+                    }
+                } catch (error) {
+                    console.warn("GG.deals API fetch failed:", error);
+                    // If API fails and scraping is disabled, hide the container
+                    if (!enableScraping) {
+                        const noDataResult = {
+                            officialPrice: "No data",
+                            keyshopPrice: "No data",
+                            historicalData: [],
+                            lowestPriceType: null,
+                            url: `https://gg.deals/steam/${type}/${id}/`,
+                            isCorrectGame: true,
+                            noData: true // Flag to indicate there's no data
+                        };
+                        priceCache.set(cacheKey, noDataResult, "api");
+                        // Hide the container instead of updating with "No data"
+                        const container = document.getElementById(containerId);
+                        if (container) {
+                            container.style.display = "none";
+                        }
+                        return;
+                    }
+                    // Otherwise fall back to web scraping if enabled
                 }
             }
-        });
-    }
 
-    // Function to convert game name to URL slug
-    const toUrlSlug = (name) => {
-        return name.toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+|-+$/g, '');
-    };
-
-    // Define base URL formats
-    const baseFormats = [
-        { type: type, id: id },  // Try original type first
-        { type: 'sub', id: id }, // Try sub if original was app
-        { type: 'app', id: id }  // Try app if original was sub
-    ];
-
-    // Filter unique formats
-    const urlFormats = baseFormats.filter((format, index) => 
-        format.type === type || 
-        baseFormats.findIndex(f => f.type === format.type) === index
-    );
-
-    // Try each URL format
-    for (const format of urlFormats) {
-        try {
-            const steamUrl = `https://gg.deals/steam/${format.type}/${format.id}/`;
-            const response = await fetchWithRetry(steamUrl);
-            const data = extractPriceData(response.responseText);
-            if (data && data.officialPrice !== "No data") {
-                priceCache.set(cacheKey, data);
-                updatePriceDisplay(data, containerId);
+            // If scraping is disabled, hide the container entirely
+            if (!enableScraping) {
+                const noDataResult = {
+                    officialPrice: "No data",
+                    keyshopPrice: "No data",
+                    historicalData: [],
+                    lowestPriceType: null,
+                    url: `https://gg.deals/steam/${type}/${id}/`,
+                    isCorrectGame: true,
+                    noData: true // Flag to indicate there's no data
+                };
+                priceCache.set(cacheKey, noDataResult, "web");
+                // Hide the container instead of updating with "No data"
+                const container = document.getElementById(containerId);
+                if (container) {
+                    container.style.display = "none";
+                }
                 return;
             }
-        } catch (error) {
-            console.warn(`GG.deals ${format.type} URL fetch failed:`, error);
-        }
-    }
 
-    // If the direct Steam URL didn't work, just show No data
-    // Don't try game name based URL anymore
-    updatePriceDisplay({
-        officialPrice: "No data",
-        keyshopPrice: "No data",
-        historicalData: [],
-        lowestPriceType: null,
-        url: `https://gg.deals/steam/${type}/${id}/`,
-        isCorrectGame: true
-    }, containerId);
+            // If we get here, we're either:
+            // 1. Using web scraping for any type (scraping enabled)
+            // 2. Not using API at all
+
+            // Batch requests for performance
+            await new Promise(resolve => setTimeout(resolve, Math.random() * 100));
+
+            // Function to convert game name to URL slug
+            const toUrlSlug = (name) => {
+                return name.toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '');
+            };
+
+            // Define base URL formats - only try one format unless necessary
+            let urlFormats = [];
+            
+            if (type === 'bundle') {
+                // For bundles, only try the bundle format
+                urlFormats = [{ type: 'bundle', id: id }];
+            } else if (type === 'app') {
+                // For apps, only try the app format
+                urlFormats = [{ type: 'app', id: id }];
+            } else if (type === 'sub') {
+                // For subs, try both sub and app formats since GG.deals sometimes has subs under app URLs
+                urlFormats = [
+                    { type: 'sub', id: id },
+                    { type: 'app', id: id } // Try app format as fallback
+                ];
+            }
+
+            // Try each URL format
+            for (const format of urlFormats) {
+                try {
+                    const steamUrl = `https://gg.deals/steam/${format.type}/${format.id}/`;
+                    const response = await fetchWithRetry(steamUrl);
+                    const data = extractPriceData(response.responseText);
+                    if (data && data.officialPrice !== "No data") {
+                        priceCache.set(cacheKey, data, "web");
+                        updatePriceDisplay(data, containerId);
+                        return;
+                    }
+                } catch (error) {
+                    console.warn(`GG.deals ${format.type} URL fetch failed:`, error);
+                }
+            }
+
+            // If the direct Steam URL didn't work, hide the container
+            const noDataResult = {
+                officialPrice: "No data",
+                keyshopPrice: "No data",
+                historicalData: [],
+                lowestPriceType: null,
+                url: `https://gg.deals/steam/${type}/${id}/`,
+                isCorrectGame: true,
+                noData: true // Flag to indicate there's no data
+            };
+            
+            priceCache.set(cacheKey, noDataResult, "web");
+            // Hide the container
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.style.display = "none";
+            }
+        } finally {
+            // Clear the pending request marker when done
+            window[pendingRequestKey] = null;
+        }
+    })();
+    
+    // Store the promise so other requests for the same item can wait for it
+    window[pendingRequestKey] = requestPromise;
+    
+    // Execute the promise
+    await requestPromise;
   }
 
   function extractPriceData(html, expectedGameName) {
@@ -1064,6 +2157,12 @@
   function updatePriceDisplay(data, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
+    
+    // If data has the noData flag, hide the container and return
+    if (data && data.noData) {
+        container.style.display = "none";
+        return;
+    }
 
     // Update all View Offers links in the container
     const links = container.querySelectorAll(".gg-view-offers");
@@ -1214,6 +2313,63 @@
 
   // Wait for Steam page to fully load (including age gate) and handle tab visibility
   let isInitialized = false;
+  
+  // Queue for batching price requests
+  const requestQueue = {
+    items: [],
+    processing: false,
+    
+    add: function(item) {
+      this.items.push(item);
+      if (!this.processing) {
+        this.processQueue();
+      }
+    },
+    
+    processQueue: async function() {
+      if (this.items.length === 0) {
+        this.processing = false;
+        return;
+      }
+      
+      this.processing = true;
+      
+      // Process items in batches of 3 with a small delay between batches
+      const BATCH_SIZE = 3;
+      const BATCH_DELAY = 300; // ms
+      
+      // Process a batch
+      const batch = this.items.splice(0, BATCH_SIZE);
+      const promises = batch.map(item => {
+        return fetchGamePrices(
+          item.gameTitle, 
+          item.containerId, 
+          item.forceRefresh, 
+          item.idInfo
+        ).catch(err => {
+          console.warn(`GG.deals: Error processing queue item:`, err);
+          // Update the display to show error
+          const container = document.getElementById(item.containerId);
+          if (container) {
+            const priceElements = container.querySelectorAll('.gg-price-value:not(.historical)');
+            priceElements.forEach(el => {
+              el.textContent = 'Error';
+            });
+          }
+        });
+      });
+      
+      // Wait for batch to complete
+      await Promise.all(promises);
+      
+      // Small delay before next batch to avoid overwhelming browser
+      if (this.items.length > 0) {
+        setTimeout(() => this.processQueue(), BATCH_DELAY);
+      } else {
+        this.processing = false;
+      }
+    }
+  };
 
   function initializeWhenVisible() {
     if (document.visibilityState === "visible" && !isInitialized) {
@@ -1230,7 +2386,14 @@
                 const mainContainer = createPriceContainer();
                 mainContainer.id = 'gg-deals-main';
                 purchaseSection.parentNode.insertBefore(mainContainer, purchaseSection);
-                fetchGamePrices(null, 'gg-deals-main', false, { type: pageType, id: pageId });
+                
+                // Prioritize the main container request
+                requestQueue.add({
+                  gameTitle: null,
+                  containerId: 'gg-deals-main',
+                  forceRefresh: false,
+                  idInfo: { type: pageType, id: pageId }
+                });
             }
         }
 
@@ -1242,32 +2405,45 @@
                 const mainContainer = createPriceContainer();
                 mainContainer.id = `gg-deals-${pageType}-${pageId}`;
                 firstPurchaseGame.parentNode.insertBefore(mainContainer, firstPurchaseGame);
-                fetchGamePrices(null, mainContainer.id, false, { type: pageType, id: pageId });
+                
+                requestQueue.add({
+                  gameTitle: null,
+                  containerId: mainContainer.id,
+                  forceRefresh: false,
+                  idInfo: { type: pageType, id: pageId }
+                });
             }
             return; // Exit early to prevent additional displays
         }
 
-        // Handle all purchase games (only for app pages)
+        // Only process additional items if we're on an app page
         if (pageType === 'app') {
-            document.querySelectorAll('.game_area_purchase_game').forEach((element) => {
-              // Skip if this is a demo section
-              if (element.closest('.demo_above_purchase')) {
-                  return;
-              }
-          
-              // Get the ID and type from the inputs
-              const bundleInput = element.querySelector('input[name="bundleid"]');
-              const subInput = element.querySelector('input[name="subid"]');
-          
-              if (!bundleInput && !subInput) {
-                  // If no inputs found, try to get ID from the element ID
-                  const elementId = element.id.match(/\d+$/)?.[0];
-          
-                  // Skip main app on app pages
-                  if (pageType === 'app' && elementId === pageId) {
-                      return; // Skip main app on app pages
-                  }
-              }
+            // Get all purchase sections up front
+            const purchaseSections = document.querySelectorAll('.game_area_purchase_game');
+            let delayIndex = 0;
+            
+            // Function to process sections with delay
+            const processSections = () => {
+              // Process each purchase game with the bundle/sub displays
+              purchaseSections.forEach((element, index) => {
+                // Skip if this is a demo section
+                if (element.closest('.demo_above_purchase')) {
+                    return;
+                }
+            
+                // Get the ID and type from the inputs
+                const bundleInput = element.querySelector('input[name="bundleid"]');
+                const subInput = element.querySelector('input[name="subid"]');
+            
+                if (!bundleInput && !subInput) {
+                    // If no inputs found, try to get ID from the element ID
+                    const elementId = element.id.match(/\d+$/)?.[0];
+            
+                    // Skip main app on app pages (main app already handled above)
+                    if (pageType === 'app' && elementId === pageId) {
+                        return;
+                    }
+                }
 
                 let itemType, itemId;
                 if (bundleInput) {
@@ -1277,32 +2453,68 @@
                     itemType = 'sub';
                     itemId = subInput.value;
                 } else {
-                    // Fallback to page type/id
-                    itemType = pageType;
-                    itemId = pageId;
+                    // Skip this item if we can't identify it
+                    return;
                 }
 
                 const containerId = `gg-deals-${itemType}-${itemId}`;
+                
+                // Check if a display already exists for this ID
+                if (document.getElementById(containerId)) {
+                  return; // Skip if already exists
+                }
+                
                 const compactDisplay = createCompactPriceDisplay(containerId);
                 
                 // Insert before game_purchase_action
                 const purchaseAction = element.querySelector('.game_purchase_action');
                 if (purchaseAction) {
                     purchaseAction.parentNode.insertBefore(compactDisplay, purchaseAction);
-                    // Use Promise to handle the async operation properly
-                    (async () => {
-                        await fetchGamePrices(null, containerId, false, { type: itemType, id: itemId });
-                    })();
+                    
+                    // Add to request queue with lower priority
+                    requestQueue.add({
+                      gameTitle: null, 
+                      containerId: containerId,
+                      forceRefresh: false,
+                      idInfo: { type: itemType, id: itemId }
+                    });
                 }
-            });
+              });
+            };
+            
+            // Use requestIdleCallback if available, otherwise use setTimeout
+            if (typeof window.requestIdleCallback === 'function') {
+              window.requestIdleCallback(() => processSections(), { timeout: 1000 });
+            } else {
+              // Small delay to let the main page render first
+              setTimeout(processSections, 200);
+            }
         }
     }
   }
 
-  // Check for visibility changes
-  document.addEventListener("visibilitychange", initializeWhenVisible);
+  // Utility function to debounce function calls - useful for event handlers
+  function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+      const context = this;
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+  }
+
+  // Check for visibility changes with debounce
+  document.addEventListener("visibilitychange", debounce(initializeWhenVisible, 100));
 
   // Initial check (in case the tab is already visible)
+  // Use setTimeout to ensure the page is fully loaded
+  setTimeout(() => {
+    if (document.visibilityState === "visible") {
+      initializeWhenVisible();
+    }
+  }, 500);
+  
+  // Cleanup interval check after a reasonable time
   const checkTitle = setInterval(() => {
     if (document.visibilityState === "visible") {
       initializeWhenVisible();
@@ -1310,5 +2522,10 @@
         clearInterval(checkTitle);
       }
     }
-  }, 500);
+  }, 1000);
+  
+  // Clear the interval after 10 seconds regardless to avoid resource waste
+  setTimeout(() => {
+    clearInterval(checkTitle);
+  }, 10000);
 })();
