@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GG.deals Steam Companion
 // @namespace    http://tampermonkey.net/
-// @version      1.6
+// @version      1.6.4
 // @description  Shows lowest price from gg.deals on Steam game pages
 // @author       Crimsab
 // @license      GPL-3.0-or-later
@@ -23,7 +23,9 @@
 // KNOWN LIMITATIONS: 
 // Bundles always use web scraping, never API. The official api does not support steam bundles, giving null results.
 // Subs (packages) and Apps can use either API or web scraping.
+// Steam sub IDs are no longer supported by the API - all requests use app IDs.
 // "Enable Scraping" toggle controls whether web scraping is used when API is disabled or fails.
+// GG.deals website now uses Cloudflare protection which blocks automated requests (HTTP 403 errors). So most of the resolvers are disabled. 
 
 (function () {
   "use strict";
@@ -947,6 +949,31 @@
     return requestPromise;
   }
 
+  // Function to extract app ID from Steam page URL
+  function extractAppIdFromSteamPage() {
+    try {
+      // Look for app ID in the current URL
+      const urlMatch = window.location.pathname.match(/\/app\/(\d+)/);
+      if (urlMatch) {
+        return urlMatch[1];
+      }
+      
+      // Look for app ID in page elements (fallback)
+      const appIdElement = document.querySelector('input[name="appid"]') || 
+                          document.querySelector('[data-appid]') ||
+                          document.querySelector('.game_area_purchase_game input[name="appid"]');
+      
+      if (appIdElement) {
+        return appIdElement.value || appIdElement.getAttribute('data-appid');
+      }
+      
+      return null;
+    } catch (error) {
+      console.warn("GG.deals: Error extracting app ID from Steam page:", error);
+      return null;
+    }
+  }
+
   // New function to fetch data using GG.deals API
   async function fetchGamePricesApi(steamId, steamType) {
     // Check for valid API key
@@ -958,20 +985,36 @@
     // Get preferred region
     const region = GM_getValue("preferredRegion", "us");
 
-    // Set up the API URL based on the steam type
-    let apiUrl;
+    // For subs, try to extract the actual app ID from the Steam page
+    let effectiveSteamId = steamId;
     if (steamType === 'sub') {
-      apiUrl = `https://api.gg.deals/v1/prices/by-steam-sub-id/?ids=${steamId}&key=${apiKey}&region=${region}`;
-    } else {
-      apiUrl = `https://api.gg.deals/v1/prices/by-steam-app-id/?ids=${steamId}&key=${apiKey}&region=${region}`;
+      const extractedAppId = extractAppIdFromSteamPage();
+      if (extractedAppId && extractedAppId !== steamId) {
+        console.log(`GG.deals: Using extracted app ID ${extractedAppId} instead of sub ID ${steamId}`);
+        effectiveSteamId = extractedAppId;
+      }
     }
+
+    // Steam sub IDs are no longer supported, use app ID for both
+    const apiUrl = `https://api.gg.deals/v1/prices/by-steam-app-id/?ids=${effectiveSteamId}&key=${apiKey}&region=${region}`;
     
     try {
       const response = await rateLimitedRequest(apiUrl);
       
       // Check for successful response
       if (response.status !== 200) {
-        throw new Error(`API returned status ${response.status}`);
+        console.error(`GG.deals API Error Details:`, {
+          status: response.status,
+          statusText: response.statusText,
+          url: apiUrl,
+          originalSteamId: steamId,
+          effectiveSteamId: effectiveSteamId,
+          steamType: steamType,
+          region: region,
+          responseText: response.responseText?.substring(0, 500) || 'No response text',
+          timestamp: new Date().toISOString()
+        });
+        throw new Error(`API returned status ${response.status} (${response.statusText})`);
       }
       
       // Parse the JSON response
@@ -983,11 +1026,11 @@
       }
       
       // Check if data exists for this game
-      if (!jsonData.data || !jsonData.data[steamId]) {
+      if (!jsonData.data || !jsonData.data[effectiveSteamId]) {
         throw new Error("No data found for this game");
       }
       
-      const gameData = jsonData.data[steamId];
+      const gameData = jsonData.data[effectiveSteamId];
       
       // Handle case where game is not found in API
       if (gameData === null) {
@@ -1054,7 +1097,16 @@
       
       return formattedData;
     } catch (error) {
-      console.error("GG.deals API error:", error);
+      console.error("GG.deals API error:", {
+        error: error.message,
+        originalSteamId: steamId,
+        effectiveSteamId: effectiveSteamId,
+        steamType: steamType,
+        region: region,
+        apiUrl: apiUrl,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      });
       throw error;
     }
   }
@@ -1103,7 +1155,7 @@
                     <div class="gg-settings-dropdown">
                         <div class="gg-icon-button gg-settings-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                                <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69-.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98 0 .33.03.65.07.97l-2.11 1.65c-.19.15-.24.42-.12-.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65z"/>
+                                <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
                             </svg>
                         </div>
                         <div class="gg-settings-content">
@@ -1123,7 +1175,7 @@
                                 </label>
                                 <label class="gg-toggle ${toggleStates.subDisplay ? "active" : ""}" title="Toggle Sub/Bundle Displays">
                                     <input type="checkbox" id="gg-toggle-sub-display-compact" ${toggleStates.subDisplay ? "checked" : ""}>
-                                    <label>Bundle Display</label>
+                                    <label>Bundle/Sub Display</label>
                                 </label>
                                 <label class="gg-toggle ${toggleStates.enableScraping ? "active" : ""}" title="Enable/disable web scraping for non-API requests">
                                     <input type="checkbox" id="gg-toggle-enable-scraping-compact" ${toggleStates.enableScraping ? "checked" : ""}>
@@ -1813,12 +1865,29 @@
       if (response.status === 200) {
         return response;
       }
-      throw new Error(`HTTP ${response.status}`);
+      throw new Error(`HTTP ${response.status} (${response.statusText || 'Unknown'})`);
     } catch (error) {
       if (retries > 0) {
+        console.warn(`GG.deals fetchWithRetry: Retrying ${url} (${retries} retries left)`, {
+          error: error.message,
+          url: url,
+          status: error.status || 'Unknown',
+          statusText: error.statusText || 'Unknown',
+          retriesLeft: retries,
+          timestamp: new Date().toISOString()
+        });
         await new Promise((resolve) => setTimeout(resolve, 1000));
         return fetchWithRetry(url, retries - 1);
       }
+      console.error(`GG.deals fetchWithRetry: All retries failed for ${url}`, {
+        error: error.message,
+        url: url,
+        status: error.status || 'Unknown',
+        statusText: error.statusText || 'Unknown',
+        responseText: error.responseText?.substring(0, 500) || 'No response text',
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      });
       throw error;
     }
   }
@@ -1921,7 +1990,15 @@
                         return;
                     }
                 } catch (error) {
-                    console.warn("GG.deals API fetch failed:", error);
+                    console.warn("GG.deals API fetch failed:", {
+                        error: error.message,
+                        steamId: id,
+                        steamType: type,
+                        region: GM_getValue("preferredRegion", "us"),
+                        apiKey: apiKey ? "Present" : "Missing",
+                        stack: error.stack,
+                        timestamp: new Date().toISOString()
+                    });
                     // If API fails and scraping is disabled, hide the container
                     if (!enableScraping) {
                         const noDataResult = {
@@ -1989,10 +2066,10 @@
                 // For apps, only try the app format
                 urlFormats = [{ type: 'app', id: id }];
             } else if (type === 'sub') {
-                // For subs, try both sub and app formats since GG.deals sometimes has subs under app URLs
+                // For subs, try app format first since GG.deals now uses app IDs for subs
                 urlFormats = [
-                    { type: 'sub', id: id },
-                    { type: 'app', id: id } // Try app format as fallback
+                    { type: 'app', id: id }, // Try app format first (new standard)
+                    { type: 'sub', id: id }  // Try sub format as fallback (legacy if for whatever reason they will add it back)
                 ];
             }
 
@@ -2008,26 +2085,61 @@
                         return;
                     }
                 } catch (error) {
-                    console.warn(`GG.deals ${format.type} URL fetch failed:`, error);
+                    const isCloudflareBlock = error.message?.includes('403') || error.status === 403;
+                    const errorDetails = {
+                        error: error.message,
+                        url: `https://gg.deals/steam/${format.type}/${format.id}/`,
+                        steamId: format.id,
+                        steamType: format.type,
+                        status: error.status || 'Unknown',
+                        statusText: error.statusText || 'Unknown',
+                        responseText: error.responseText?.substring(0, 500) || 'No response text',
+                        stack: error.stack,
+                        timestamp: new Date().toISOString(),
+                        isCloudflareBlock: isCloudflareBlock
+                    };
+                    
+                    if (isCloudflareBlock) {
+                        console.error(`GG.deals ${format.type} URL blocked by Cloudflare:`, errorDetails);
+                        console.warn(`GG.deals: Cloudflare protection detected. Can't do anything about it.`);
+                    } else {
+                        console.warn(`GG.deals ${format.type} URL fetch failed:`, errorDetails);
+                    }
                 }
             }
 
-            // If the direct Steam URL didn't work, hide the container
+            // If the direct Steam URL didn't work, try to construct a fallback URL
+            // This is useful when Cloudflare blocks web scraping but we can still show a link
+            const fallbackUrl = `https://gg.deals/steam/${type}/${id}/`;
+            
+            // Create a minimal data structure with the fallback URL
             const noDataResult = {
                 officialPrice: "No data",
                 keyshopPrice: "No data",
                 historicalData: [],
                 lowestPriceType: null,
-                url: `https://gg.deals/steam/${type}/${id}/`,
+                url: fallbackUrl,
                 isCorrectGame: true,
-                noData: true // Flag to indicate there's no data
+                noData: true, // Flag to indicate there's no data
+                cloudflareBlocked: true // Flag to indicate Cloudflare blocked the request
             };
             
             priceCache.set(cacheKey, noDataResult, "web");
-            // Hide the container
+            
+            // Instead of hiding the container, show it with a message about Cloudflare
             const container = document.getElementById(containerId);
             if (container) {
-                container.style.display = "none";
+                // Update the display to show the fallback data
+                updatePriceDisplay(noDataResult, containerId);
+                
+                // Add a small notice about Cloudflare if this is the first time
+                if (!container.querySelector('.gg-cloudflare-notice')) {
+                    const notice = document.createElement('div');
+                    notice.className = 'gg-cloudflare-notice';
+                    notice.style.cssText = 'font-size: 11px; color: #ff7b7b; margin-top: 8px; font-style: italic; text-align: center;';
+                    notice.textContent = '⚠️ Cloudflare protection detected. Use API for full functionality.';
+                    container.appendChild(notice);
+                }
             }
         } finally {
             // Clear the pending request marker when done
@@ -2347,7 +2459,15 @@
           item.forceRefresh, 
           item.idInfo
         ).catch(err => {
-          console.warn(`GG.deals: Error processing queue item:`, err);
+          console.warn(`GG.deals: Error processing queue item:`, {
+            error: err.message,
+            containerId: item.containerId,
+            gameTitle: item.gameTitle,
+            forceRefresh: item.forceRefresh,
+            idInfo: item.idInfo,
+            stack: err.stack,
+            timestamp: new Date().toISOString()
+          });
           // Update the display to show error
           const container = document.getElementById(item.containerId);
           if (container) {

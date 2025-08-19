@@ -55,13 +55,34 @@ A userscript that enhances Steam store pages by displaying price comparisons fro
 
 ## Changelog
 
+### 1.6.4
+- **Fixed Steam Sub ID Support**: Steam sub IDs are no longer supported by GG.deals API - now automatically extracts app ID from Steam page URL
+- **Enhanced Error Logging**: Added detailed error reporting with URLs, status codes, and timestamps for better debugging
+- **Improved Settings Icon**: Replaced buggy gear icon with clean, modern settings panel icon
+- **Smart Cloudflare Handling**: Better detection and user feedback when Cloudflare blocks requests
+- **API-First Approach**: Prioritizes API usage for better reliability and performance
+
+### 1.6.3
+- **Steam Sub ID Fix**: Updated API endpoints to use app IDs for both apps and subs (GG.deals API change)
+- **Web Scraping Priority**: Updated URL formats to try app format first for better compatibility
+
+### 1.6.2
+- **Cloudflare Protection Handling**: Added smart fallback mechanism when Cloudflare blocks web scraping
+- **Enhanced Error Detection**: Specific detection for 403 errors with helpful user notifications
+- **Graceful Degradation**: Containers remain visible with helpful messages instead of disappearing
+- **Updated Known Limitations**: Documented Cloudflare protection and API recommendations
+
+### 1.6.1
+- **Enhanced Error Logging**: Added detailed error reporting with URLs, status codes, and timestamps
+- **Better Debugging**: Comprehensive error objects for easier troubleshooting
+
 ### 1.6
 - Added official API support (requires your API key)
 - Option to disable/enable web scraping
 - Option to disable/enable API
 - Complete customization of the colors
 - Option to choose the preferred region and the currency (API)
-- If web scraping is off, it doesn't show the prices for the bundles (API gives null data in resposne)
+- If web scraping is off, it doesn't show the prices for the bundles (API gives null data in response)
 
 ### 1.5.1
 - Fixed tooltip hover on historical prices
@@ -84,6 +105,40 @@ A userscript that enhances Steam store pages by displaying price comparisons fro
 
 ### 1.0
 - Initial release
+
+## Known Limitations
+
+- **Bundles**: Always use web scraping, never API (GG.deals API doesn't support Steam bundles)
+- **Steam Sub IDs**: No longer supported by GG.deals API - script automatically extracts app IDs from Steam pages (I don't know why they removed it)
+- **Cloudflare Protection**: GG.deals website uses Cloudflare which may block automated requests, like the Steam Resolvers (HTTP 403 errors)
+- **API vs Web Scraping**: API is recommended for best reliability and performance
+
+## Troubleshooting
+
+### Common Issues
+
+**"No data found for this game"**
+- This usually means the game isn't in GG.deals database
+- For Steam subs, the script now automatically extracts the correct app ID
+- Try refreshing the page or using the manual refresh button
+
+**HTTP 403 Errors**
+- Cloudflare is blocking the request
+- Enable API usage with a valid API key for best results
+- Web scraping may be temporarily unavailable
+
+**Prices not updating**
+- Check if API is enabled and API key is valid
+- Try manual refresh button
+- Check browser console for detailed error messages
+
+### Debug Information
+
+The script provides detailed error logging in the browser console (F12 → Console) including:
+- Request URLs and status codes
+- Steam IDs being used
+- API responses and error details
+- Timestamps for all operations
 
 ## Permissions
 
