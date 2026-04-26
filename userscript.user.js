@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GG.deals Steam Companion
 // @namespace    http://tampermonkey.net/
-// @version      1.6.4
+// @version      2.0.0
 // @description  Shows lowest price from gg.deals on Steam game pages
 // @author       Crimsab
 // @license      GPL-3.0-or-later

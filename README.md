@@ -116,6 +116,15 @@ The check command validates the userscript syntax and runs smoke tests against a
 - `dist/chrome-extension` for local unpacked installation
 - `dist/ggdeals-steam-companion-chrome.zip` for release upload
 
+To prepare a release version:
+
+```bash
+bun run release:version 2.0.0
+bun run check
+```
+
+This updates `package.json`, `extension/manifest.json`, the userscript metadata header, and `CHANGELOG.md`.
+
 ### Debug Information
 
 The script provides detailed error logging in the browser console (F12 → Console) including:

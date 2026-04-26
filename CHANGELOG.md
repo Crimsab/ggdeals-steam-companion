@@ -2,12 +2,19 @@
 
 ## Unreleased
 
+## 2.0.0 - 2026-04-26
+
 - Keep the GG.deals panel visible when Cloudflare blocks web scraping, with a fallback "View Offers" link.
 - Redact GG.deals API keys from console error details.
 - Escape saved API and color settings before injecting them into settings markup.
 - Add Bun-based syntax checks and jsdom smoke tests.
 - Add GitHub Actions CI for linting, testing, and userscript artifact upload.
 - Add a Manifest V3 Chrome extension build that reuses the userscript core.
+- Add API key help links in both the userscript and extension settings.
+- Make compact view the recommended default.
+- Add collapsible settings sections to reduce Steam page clutter.
+- Clarify unavailable price states for Cloudflare, API errors, missing API keys, not-found games, and free games.
+- Autosave Chrome extension option toggles and API key changes.
 
 ## 1.6.4
 

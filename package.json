@@ -1,11 +1,12 @@
 {
   "name": "ggdeals-steam-companion",
-  "version": "1.6.4",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "build:extension": "bun scripts/build-extension.ts",
     "lint": "node --check userscript.user.js",
+    "release:version": "bun scripts/release-version.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "check": "bun run lint && bun run typecheck && bun test && bun run build:extension"
