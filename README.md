@@ -39,6 +39,7 @@ A userscript that enhances Steam store pages by displaying price comparisons fro
 
 - Shows real-time price comparisons from official stores and keyshops
 - Displays historical low prices with dates
+- Supports the official GG.deals API for more reliable results
 - Clean and modern UI that matches Steam's design
 - Toggle between official stores and keyshop prices
 - Remembers your display preferences
@@ -51,60 +52,12 @@ A userscript that enhances Steam store pages by displaying price comparisons fro
 1. Visit any Game page or DLC page on the Steam store
 2. The script will automatically add a price comparison section above the purchase options
 3. Use the toggles to show/hide official stores and keyshop prices
-4. Click "View Offers" to see all available deals on GG.deals
+4. Optionally enable the GG.deals API in the settings panel and save your API key
+5. Click "View Offers" to see all available deals on GG.deals
 
 ## Changelog
 
-### 1.6.4
-- **Fixed Steam Sub ID Support**: Steam sub IDs are no longer supported by GG.deals API - now automatically extracts app ID from Steam page URL
-- **Enhanced Error Logging**: Added detailed error reporting with URLs, status codes, and timestamps for better debugging
-- **Improved Settings Icon**: Replaced buggy gear icon with clean, modern settings panel icon
-- **Smart Cloudflare Handling**: Better detection and user feedback when Cloudflare blocks requests
-- **API-First Approach**: Prioritizes API usage for better reliability and performance
-
-### 1.6.3
-- **Steam Sub ID Fix**: Updated API endpoints to use app IDs for both apps and subs (GG.deals API change)
-- **Web Scraping Priority**: Updated URL formats to try app format first for better compatibility
-
-### 1.6.2
-- **Cloudflare Protection Handling**: Added smart fallback mechanism when Cloudflare blocks web scraping
-- **Enhanced Error Detection**: Specific detection for 403 errors with helpful user notifications
-- **Graceful Degradation**: Containers remain visible with helpful messages instead of disappearing
-- **Updated Known Limitations**: Documented Cloudflare protection and API recommendations
-
-### 1.6.1
-- **Enhanced Error Logging**: Added detailed error reporting with URLs, status codes, and timestamps
-- **Better Debugging**: Comprehensive error objects for easier troubleshooting
-
-### 1.6
-- Added official API support (requires your API key)
-- Option to disable/enable web scraping
-- Option to disable/enable API
-- Complete customization of the colors
-- Option to choose the preferred region and the currency (API)
-- If web scraping is off, it doesn't show the prices for the bundles (API gives null data in response)
-
-### 1.5.1
-- Fixed tooltip hover on historical prices
-
-#### 1.5
-- Fixed button going over container, fixed uneven icon, moved updated text as tooltip
-
-### 1.4
-- Added bundle displays, fixed UI errors, forced correct URLs, and other small things
-
-### 1.3
-- Various fixes
-- Integrated suggestions from @enchained for /issues/1, 2 & 3 (better title search, compact view and support for package and bundles)
-
-### 1.2
-- LICENSE and greasyfork upload
-
-### 1.1 
-- Integration of a cache system for the prices, with manual refresh
-
-### 1.0
-- Initial release
+See [CHANGELOG.md](CHANGELOG.md).
 
 ## Known Limitations
 
@@ -112,6 +65,7 @@ A userscript that enhances Steam store pages by displaying price comparisons fro
 - **Steam Sub IDs**: No longer supported by GG.deals API - script automatically extracts app IDs from Steam pages (I don't know why they removed it)
 - **Cloudflare Protection**: GG.deals website uses Cloudflare which may block automated requests, like the Steam Resolvers (HTTP 403 errors)
 - **API vs Web Scraping**: API is recommended for best reliability and performance
+- **Cloudflared**: Cloudflare Tunnel does not bypass third-party Cloudflare challenges. It can expose your own services, but it cannot make GG.deals scraping reliable.
 
 ## Troubleshooting
 
@@ -126,11 +80,23 @@ A userscript that enhances Steam store pages by displaying price comparisons fro
 - Cloudflare is blocking the request
 - Enable API usage with a valid API key for best results
 - Web scraping may be temporarily unavailable
+- The script should keep the GG.deals section visible with a fallback link even when scraping is blocked
 
 **Prices not updating**
 - Check if API is enabled and API key is valid
 - Try manual refresh button
 - Check browser console for detailed error messages
+
+## Development
+
+This project uses [Bun](https://bun.sh/) for local checks.
+
+```bash
+bun install
+bun run check
+```
+
+The check command validates the userscript syntax and runs smoke tests against a mocked Steam page.
 
 ### Debug Information
 
