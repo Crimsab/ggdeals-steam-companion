@@ -10,6 +10,7 @@
 - Add Bun-based syntax checks and jsdom smoke tests.
 - Add GitHub Actions CI for linting, testing, and userscript artifact upload.
 - Add a Manifest V3 Chrome extension build that reuses the userscript core.
+- Add a native Steam browser extension loading path, closing #5 as a more durable alternative to a Millennium plugin.
 - Add API key help links in both the userscript and extension settings.
 - Make compact view the recommended default.
 - Add collapsible settings sections to reduce Steam page clutter.
