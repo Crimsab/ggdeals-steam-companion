@@ -62,11 +62,11 @@ describe("GG.deals Steam Companion userscript", () => {
     expect(container.style.display).toBe("");
     expect(container.textContent).toContain("Blocked");
     expect(container.textContent).toContain("Use API");
-    expect(window.document.querySelector(".gg-cloudflare-notice")).toBeTruthy();
+    expect(window.document.querySelector(".gg-unavailable-notice")?.textContent).toContain("Cloudflare blocked");
     expect(window.document.querySelector(".gg-view-offers").href).toBe("https://gg.deals/steam/app/730/");
 
     const cached = JSON.parse(store.get("cache_app_730"));
-    expect(cached.data.cloudflareBlocked).toBe(true);
+    expect(cached.data.unavailableReason).toBe("cloudflare");
   });
 
   test("does not print the API key when API requests fail", async () => {
@@ -94,5 +94,68 @@ describe("GG.deals Steam Companion userscript", () => {
     const serializedErrors = JSON.stringify(errors);
     expect(serializedErrors).not.toContain(secret);
     expect(serializedErrors).toContain("key=[redacted]");
+  });
+
+  test("shows an API required prompt when scraping is disabled without an API key", async () => {
+    const { window, store } = createSteamDom({
+      values: {
+        useApi: true,
+        enableScraping: false
+      },
+      requestHandler: () => {
+        throw new Error("No network requests should be made");
+      }
+    });
+
+    await wait(700);
+
+    const container = window.document.querySelector(".gg-deals-container");
+    expect(container).toBeTruthy();
+    expect(container.style.display).toBe("");
+    expect(container.textContent).toContain("API");
+    expect(container.textContent).toContain("Required");
+    expect(window.document.querySelector(".gg-unavailable-notice")?.textContent).toContain("no GG.deals API key");
+
+    const cached = JSON.parse(store.get("cache_app_730"));
+    expect(cached.data.unavailableReason).toBe("api_required");
+  });
+
+  test("formats zero API prices as Free", async () => {
+    const { window } = createSteamDom({
+      values: {
+        useApi: true,
+        apiKey: "test-key",
+        enableScraping: false
+      },
+      requestHandler: ({ url, onload }) => {
+        expect(url).toContain("api.gg.deals");
+        setTimeout(() => onload({
+          status: 200,
+          statusText: "OK",
+          responseText: JSON.stringify({
+            success: true,
+            data: {
+              730: {
+                url: "https://gg.deals/game/example/",
+                prices: {
+                  currency: "$",
+                  currentRetail: 0,
+                  currentKeyshops: null,
+                  historicalRetail: 0,
+                  historicalKeyshops: null
+                }
+              }
+            }
+          })
+        }), 0);
+      }
+    });
+
+    await wait(900);
+
+    const container = window.document.querySelector(".gg-deals-container");
+    expect(container).toBeTruthy();
+    expect(window.document.querySelector("#gg-official-price")?.textContent).toBe("Free");
+    expect(window.document.querySelector(".gg-view-offers").href).toBe("https://gg.deals/game/example/");
   });
 });

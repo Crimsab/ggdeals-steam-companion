@@ -755,6 +755,59 @@
   function redactApiUrl(url) {
     return String(url).replace(/([?&]key=)[^&]*/i, "$1[redacted]");
   }
+
+  function createUnavailableResult(reason, url, message = "") {
+    return {
+      officialPrice: "No data",
+      keyshopPrice: "No data",
+      historicalData: [],
+      lowestPriceType: null,
+      url: url || "https://gg.deals",
+      isCorrectGame: true,
+      unavailableReason: reason,
+      unavailableMessage: message,
+      noData: true
+    };
+  }
+
+  function getUnavailableDisplay(data) {
+    const reason = data?.unavailableReason || (data?.cloudflareBlocked ? "cloudflare" : "unavailable");
+
+    const states = {
+      cloudflare: {
+        officialPrice: "Blocked",
+        keyshopPrice: "Use API",
+        notice: "Cloudflare blocked web scraping. Enable the GG.deals API for prices."
+      },
+      api_required: {
+        officialPrice: "API",
+        keyshopPrice: "Required",
+        notice: "API is enabled or scraping is disabled, but no GG.deals API key is saved."
+      },
+      api_failed: {
+        officialPrice: "API Error",
+        keyshopPrice: "Check key",
+        notice: data?.unavailableMessage ? `GG.deals API error: ${data.unavailableMessage}` : "GG.deals API request failed. Check your API key and region."
+      },
+      scraping_disabled: {
+        officialPrice: "Disabled",
+        keyshopPrice: "Enable API",
+        notice: "Scraping is disabled and API is not configured for this item."
+      },
+      not_found: {
+        officialPrice: "Not found",
+        keyshopPrice: "No data",
+        notice: "No GG.deals data was found for this Steam item."
+      },
+      unavailable: {
+        officialPrice: "No data",
+        keyshopPrice: "Unavailable",
+        notice: "GG.deals data is unavailable for this item."
+      }
+    };
+
+    return states[reason] || states.unavailable;
+  }
   
   // Get preferred region/currency (default: us)
   const preferredRegion = GM_getValue("preferredRegion", "us");
@@ -1077,7 +1130,9 @@
       
       // Format prices with currency symbol
       const formatPrice = (price) => {
-        if (!price) return "No data";
+        if (price === null || price === undefined || price === "") return "No data";
+        const numericPrice = typeof price === "number" ? price : parseFloat(String(price));
+        if (!Number.isNaN(numericPrice) && numericPrice === 0) return "Free";
         // Check if currency is before or after the number based on region
         if (["us", "ca", "au", "br"].includes(region)) {
           return `${currencySymbol}${price}`;
@@ -2038,46 +2093,27 @@
                         stack: error.stack,
                         timestamp: new Date().toISOString()
                     });
-                    // If API fails and scraping is disabled, hide the container
+                    // If API fails and scraping is disabled, keep the panel visible with a useful reason
                     if (!enableScraping) {
-                        const noDataResult = {
-                            officialPrice: "No data",
-                            keyshopPrice: "No data",
-                            historicalData: [],
-                            lowestPriceType: null,
-                            url: `https://gg.deals/steam/${type}/${id}/`,
-                            isCorrectGame: true,
-                            noData: true // Flag to indicate there's no data
-                        };
+                        const noDataResult = createUnavailableResult(
+                            "api_failed",
+                            `https://gg.deals/steam/${type}/${id}/`,
+                            error.message
+                        );
                         priceCache.set(cacheKey, noDataResult, "api");
-                        // Hide the container instead of updating with "No data"
-                        const container = document.getElementById(containerId);
-                        if (container) {
-                            container.style.display = "none";
-                        }
+                        updatePriceDisplay(noDataResult, containerId);
                         return;
                     }
                     // Otherwise fall back to web scraping if enabled
                 }
             }
 
-            // If scraping is disabled, hide the container entirely
+            // If scraping is disabled and API is not available, keep a visible prompt instead of failing silently
             if (!enableScraping) {
-                const noDataResult = {
-                    officialPrice: "No data",
-                    keyshopPrice: "No data",
-                    historicalData: [],
-                    lowestPriceType: null,
-                    url: `https://gg.deals/steam/${type}/${id}/`,
-                    isCorrectGame: true,
-                    noData: true // Flag to indicate there's no data
-                };
+                const reason = useApi && !apiKey ? "api_required" : "scraping_disabled";
+                const noDataResult = createUnavailableResult(reason, `https://gg.deals/steam/${type}/${id}/`);
                 priceCache.set(cacheKey, noDataResult, "web");
-                // Hide the container instead of updating with "No data"
-                const container = document.getElementById(containerId);
-                if (container) {
-                    container.style.display = "none";
-                }
+                updatePriceDisplay(noDataResult, containerId);
                 return;
             }
 
@@ -2113,6 +2149,7 @@
             }
 
             // Try each URL format
+            let sawCloudflareBlock = false;
             for (const format of urlFormats) {
                 try {
                     const steamUrl = `https://gg.deals/steam/${format.type}/${format.id}/`;
@@ -2122,9 +2159,14 @@
                         priceCache.set(cacheKey, data, "web");
                         updatePriceDisplay(data, containerId);
                         return;
+                    } else if (data && data.keyshopPrice !== "No data") {
+                        priceCache.set(cacheKey, data, "web");
+                        updatePriceDisplay(data, containerId);
+                        return;
                     }
                 } catch (error) {
                     const isCloudflareBlock = error.message?.includes('403') || error.status === 403;
+                    sawCloudflareBlock = sawCloudflareBlock || isCloudflareBlock;
                     const errorDetails = {
                         error: error.message,
                         url: `https://gg.deals/steam/${format.type}/${format.id}/`,
@@ -2147,38 +2189,17 @@
                 }
             }
 
-            // If the direct Steam URL didn't work, try to construct a fallback URL
-            // This is useful when Cloudflare blocks web scraping but we can still show a link
             const fallbackUrl = `https://gg.deals/steam/${type}/${id}/`;
-            
-            // Create a minimal data structure with the fallback URL
-            const noDataResult = {
-                officialPrice: "No data",
-                keyshopPrice: "No data",
-                historicalData: [],
-                lowestPriceType: null,
-                url: fallbackUrl,
-                isCorrectGame: true,
-                noData: true, // Flag to indicate there's no data
-                cloudflareBlocked: true // Flag to indicate Cloudflare blocked the request
-            };
+            const unavailableReason = sawCloudflareBlock ? "cloudflare" : "not_found";
+            const noDataResult = createUnavailableResult(unavailableReason, fallbackUrl);
             
             priceCache.set(cacheKey, noDataResult, "web");
             
-            // Instead of hiding the container, show it with a message about Cloudflare
+            // Instead of hiding the container, show it with an actionable reason
             const container = document.getElementById(containerId);
             if (container) {
                 // Update the display to show the fallback data
                 updatePriceDisplay(noDataResult, containerId);
-                
-                // Add a small notice about Cloudflare if this is the first time
-                if (!container.querySelector('.gg-cloudflare-notice')) {
-                    const notice = document.createElement('div');
-                    notice.className = 'gg-cloudflare-notice';
-                    notice.style.cssText = 'font-size: 11px; color: #ff7b7b; margin-top: 8px; font-style: italic; text-align: center;';
-                    notice.textContent = '⚠️ Cloudflare protection detected. Use API for full functionality.';
-                    container.appendChild(notice);
-                }
             }
         } finally {
             // Clear the pending request marker when done
@@ -2314,11 +2335,12 @@
 
     if (data) {
         container.style.display = "";
-        const isUnavailable = data.noData || data.cloudflareBlocked;
+        const isUnavailable = data.noData || data.unavailableReason || data.cloudflareBlocked;
+        const unavailableDisplay = isUnavailable ? getUnavailableDisplay(data) : null;
         const displayData = isUnavailable ? {
             ...data,
-            officialPrice: data.cloudflareBlocked ? "Blocked" : data.officialPrice,
-            keyshopPrice: data.cloudflareBlocked ? "Use API" : data.keyshopPrice,
+            officialPrice: unavailableDisplay.officialPrice,
+            keyshopPrice: unavailableDisplay.keyshopPrice,
             historicalData: [],
             lowestPriceType: null
         } : data;
@@ -2410,6 +2432,18 @@
         }
 
         container.classList.toggle('gg-deals-unavailable', isUnavailable);
+        let notice = container.querySelector('.gg-unavailable-notice');
+        if (isUnavailable && unavailableDisplay) {
+            if (!notice) {
+                notice = document.createElement('div');
+                notice.className = 'gg-unavailable-notice';
+                notice.style.cssText = 'font-size: 11px; color: #ffb86b; margin-top: 8px; font-style: italic; text-align: center;';
+                container.appendChild(notice);
+            }
+            notice.textContent = unavailableDisplay.notice;
+        } else if (notice) {
+            notice.remove();
+        }
 
         // Update all View Offers links
         if (data.url) {
