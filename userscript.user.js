@@ -559,6 +559,28 @@
             font-size: 13px;
             margin-bottom: 5px;
         }
+        .gg-settings-title.gg-accordion-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .gg-settings-title.gg-accordion-title:after {
+            content: "−";
+            opacity: 0.75;
+            font-size: 14px;
+        }
+        .gg-settings-section.gg-collapsed .gg-settings-title.gg-accordion-title {
+            margin-bottom: 0;
+        }
+        .gg-settings-section.gg-collapsed .gg-settings-title.gg-accordion-title:after {
+            content: "+";
+        }
+        .gg-settings-section.gg-collapsed > :not(.gg-settings-title) {
+            display: none !important;
+        }
         .gg-settings-content {
             width: 270px !important;
             max-width: 270px !important;
@@ -1509,6 +1531,8 @@
     </div>
         `;
 
+    initializeSettingsAccordions(container);
+
     // Add toggle listeners for both sets of controls
     const toggleOfficialCompact = container.querySelector(
       "#gg-toggle-official-compact"
@@ -1950,6 +1974,38 @@
     }
 
     return container;
+  }
+
+  function initializeSettingsAccordions(container) {
+    const shouldOpenApi = !toggleStates.useApi || !apiKey;
+
+    container.querySelectorAll(".gg-settings-section").forEach((section) => {
+      const title = section.querySelector(".gg-settings-title");
+      if (!title) return;
+
+      const titleText = title.textContent.trim();
+      const isApiSection = titleText.includes("API");
+      const startsOpen = isApiSection && shouldOpenApi;
+
+      title.classList.add("gg-accordion-title");
+      title.setAttribute("role", "button");
+      title.setAttribute("tabindex", "0");
+      title.setAttribute("aria-expanded", startsOpen ? "true" : "false");
+      section.classList.toggle("gg-collapsed", !startsOpen);
+
+      const toggleSection = () => {
+        const isCollapsed = section.classList.toggle("gg-collapsed");
+        title.setAttribute("aria-expanded", isCollapsed ? "false" : "true");
+      };
+
+      title.addEventListener("click", toggleSection);
+      title.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          toggleSection();
+        }
+      });
+    });
   }
 
   // Improved error handling and retries

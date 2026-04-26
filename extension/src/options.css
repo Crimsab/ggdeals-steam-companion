@@ -63,7 +63,42 @@ h1 {
 
 .form {
   display: grid;
-  gap: 18px;
+  gap: 14px;
+}
+
+.settings-group {
+  border: 1px solid rgba(103, 193, 245, 0.2);
+  border-radius: 8px;
+  background: rgba(16, 25, 35, 0.55);
+}
+
+.settings-group summary {
+  color: #67c1f5;
+  cursor: pointer;
+  font-weight: 700;
+  list-style: none;
+  padding: 14px 16px;
+  user-select: none;
+}
+
+.settings-group summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-group summary:after {
+  content: "+";
+  float: right;
+  opacity: 0.75;
+}
+
+.settings-group[open] summary:after {
+  content: "−";
+}
+
+.group-content {
+  display: grid;
+  gap: 16px;
+  padding: 0 16px 16px;
 }
 
 .field,

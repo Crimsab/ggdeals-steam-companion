@@ -18,56 +18,66 @@
         </header>
 
         <form id="settings-form" class="form">
-          <label class="toggle">
-            <input id="useApi" type="checkbox">
-            <span>
-              <strong>Use GG.deals API</strong>
-              <small>Recommended when Cloudflare blocks web scraping.</small>
-            </span>
-          </label>
+          <details class="settings-group" open>
+            <summary>API</summary>
+            <div class="group-content">
+              <label class="toggle">
+                <input id="useApi" type="checkbox">
+                <span>
+                  <strong>Use GG.deals API</strong>
+                  <small>Recommended when Cloudflare blocks web scraping.</small>
+                </span>
+              </label>
 
-          <label class="toggle">
-            <input id="compactView" type="checkbox">
-            <span>
-              <strong>Compact view (recommended)</strong>
-              <small>Keeps the Steam purchase area cleaner while preserving the offer link.</small>
-            </span>
-          </label>
+              <label class="field">
+                <span>API key</span>
+                <input id="apiKey" type="password" autocomplete="off" placeholder="Paste your GG.deals API key">
+                <span class="help-links">
+                  <a href="https://gg.deals/api/" target="_blank" rel="noopener noreferrer">Get API key</a>
+                  <a href="https://gg.deals/api/prices/" target="_blank" rel="noopener noreferrer">API docs</a>
+                </span>
+              </label>
 
-          <label class="field">
-            <span>API key</span>
-            <input id="apiKey" type="password" autocomplete="off" placeholder="Paste your GG.deals API key">
-            <span class="help-links">
-              <a href="https://gg.deals/api/" target="_blank" rel="noopener noreferrer">Get API key</a>
-              <a href="https://gg.deals/api/prices/" target="_blank" rel="noopener noreferrer">API docs</a>
-            </span>
-          </label>
+              <label class="field">
+                <span>Region</span>
+                <select id="preferredRegion">
+                  <option value="us">USA (USD)</option>
+                  <option value="gb">UK (GBP)</option>
+                  <option value="eu">Europe (EUR)</option>
+                  <option value="ca">Canada (CAD)</option>
+                  <option value="au">Australia (AUD)</option>
+                  <option value="br">Brazil (BRL)</option>
+                  <option value="tr">Turkey (TRY)</option>
+                  <option value="pl">Poland (PLN)</option>
+                  <option value="it">Italy (EUR)</option>
+                  <option value="de">Germany (EUR)</option>
+                  <option value="fr">France (EUR)</option>
+                  <option value="es">Spain (EUR)</option>
+                </select>
+              </label>
+            </div>
+          </details>
 
-          <label class="field">
-            <span>Region</span>
-            <select id="preferredRegion">
-              <option value="us">USA (USD)</option>
-              <option value="gb">UK (GBP)</option>
-              <option value="eu">Europe (EUR)</option>
-              <option value="ca">Canada (CAD)</option>
-              <option value="au">Australia (AUD)</option>
-              <option value="br">Brazil (BRL)</option>
-              <option value="tr">Turkey (TRY)</option>
-              <option value="pl">Poland (PLN)</option>
-              <option value="it">Italy (EUR)</option>
-              <option value="de">Germany (EUR)</option>
-              <option value="fr">France (EUR)</option>
-              <option value="es">Spain (EUR)</option>
-            </select>
-          </label>
+          <details class="settings-group" open>
+            <summary>Display</summary>
+            <div class="group-content">
+              <label class="toggle">
+                <input id="compactView" type="checkbox">
+                <span>
+                  <strong>Compact view (recommended)</strong>
+                  <small>Keeps the Steam purchase area cleaner while preserving the offer link.</small>
+                </span>
+              </label>
 
-          <label class="toggle">
-            <input id="enableScraping" type="checkbox">
-            <span>
-              <strong>Allow web scraping fallback</strong>
-              <small>May show a Cloudflare fallback instead of prices.</small>
-            </span>
-          </label>
+              <label class="toggle">
+                <input id="enableScraping" type="checkbox">
+                <span>
+                  <strong>Allow web scraping fallback</strong>
+                  <small>May show a Cloudflare fallback instead of prices.</small>
+                </span>
+              </label>
+            </div>
+          </details>
 
           <div class="actions">
             <button type="submit">Save settings</button>
