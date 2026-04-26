@@ -2269,17 +2269,21 @@
   function updatePriceDisplay(data, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    
-    // If data has the noData flag, hide the container and return
-    if (data && data.noData) {
-        container.style.display = "none";
-        return;
-    }
 
     // Update all View Offers links in the container
     const links = container.querySelectorAll(".gg-view-offers");
 
     if (data) {
+        container.style.display = "";
+        const isUnavailable = data.noData || data.cloudflareBlocked;
+        const displayData = isUnavailable ? {
+            ...data,
+            officialPrice: data.cloudflareBlocked ? "Blocked" : data.officialPrice,
+            keyshopPrice: data.cloudflareBlocked ? "Use API" : data.keyshopPrice,
+            historicalData: [],
+            lowestPriceType: null
+        } : data;
+
         // Update prices based on container type
         if (container.classList.contains('bundle-sub-display')) {
             // Update compact display
@@ -2288,16 +2292,16 @@
             const officialHistorical = container.querySelector('.gg-compact-official-historical');
             const keyshopHistorical = container.querySelector('.gg-compact-keyshop-historical');
 
-            if (officialPrice) officialPrice.textContent = data.officialPrice;
-            if (keyshopPrice) keyshopPrice.textContent = data.keyshopPrice;
+            if (officialPrice) officialPrice.textContent = displayData.officialPrice;
+            if (keyshopPrice) keyshopPrice.textContent = displayData.keyshopPrice;
 
             // Show historical data regardless of current price status
             if (officialHistorical) {
-                const officialHistData = data.historicalData.find(h => h.type === 'official');
+                const officialHistData = displayData.historicalData.find(h => h.type === 'official');
                 officialHistorical.textContent = officialHistData?.historical || '';
             }
             if (keyshopHistorical) {
-                const keyshopHistData = data.historicalData.find(h => h.type === 'keyshop');
+                const keyshopHistData = displayData.historicalData.find(h => h.type === 'keyshop');
                 keyshopHistorical.textContent = keyshopHistData?.historical || '';
             }
 
@@ -2305,9 +2309,9 @@
             if (officialPrice) officialPrice.classList.remove('best-price');
             if (keyshopPrice) keyshopPrice.classList.remove('best-price');
 
-            if (data.lowestPriceType === 'official' && officialPrice) {
+            if (displayData.lowestPriceType === 'official' && officialPrice) {
                 officialPrice.classList.add('best-price');
-            } else if (data.lowestPriceType === 'keyshop' && keyshopPrice) {
+            } else if (displayData.lowestPriceType === 'keyshop' && keyshopPrice) {
                 keyshopPrice.classList.add('best-price');
             }
         } else {
@@ -2328,14 +2332,14 @@
             };
 
             // Update prices
-            if (elements.official.price) elements.official.price.textContent = data.officialPrice;
-            if (elements.keyshop.price) elements.keyshop.price.textContent = data.keyshopPrice;
-            if (elements.official.compactPrice) elements.official.compactPrice.textContent = data.officialPrice;
-            if (elements.keyshop.compactPrice) elements.keyshop.compactPrice.textContent = data.keyshopPrice;
+            if (elements.official.price) elements.official.price.textContent = displayData.officialPrice;
+            if (elements.keyshop.price) elements.keyshop.price.textContent = displayData.keyshopPrice;
+            if (elements.official.compactPrice) elements.official.compactPrice.textContent = displayData.officialPrice;
+            if (elements.keyshop.compactPrice) elements.keyshop.compactPrice.textContent = displayData.keyshopPrice;
 
             // Update historical data regardless of current price status
-            const officialHistData = data.historicalData.find(h => h.type === 'official');
-            const keyshopHistData = data.historicalData.find(h => h.type === 'keyshop');
+            const officialHistData = displayData.historicalData.find(h => h.type === 'official');
+            const keyshopHistData = displayData.historicalData.find(h => h.type === 'keyshop');
 
             if (elements.official.historical) {
                 elements.official.historical.textContent = officialHistData?.historical || '';
@@ -2355,16 +2359,18 @@
                 if (el) el.classList.remove('best-price');
             });
 
-            if (data.lowestPriceType === 'official') {
+            if (displayData.lowestPriceType === 'official') {
                 [elements.official.price, elements.official.compactPrice].forEach(el => {
                     if (el) el.classList.add('best-price');
                 });
-            } else if (data.lowestPriceType === 'keyshop') {
+            } else if (displayData.lowestPriceType === 'keyshop') {
                 [elements.keyshop.price, elements.keyshop.compactPrice].forEach(el => {
                     if (el) el.classList.add('best-price');
                 });
             }
         }
+
+        container.classList.toggle('gg-deals-unavailable', isUnavailable);
 
         // Update all View Offers links
         if (data.url) {
