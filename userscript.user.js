@@ -752,7 +752,7 @@
     official: GM_getValue("showOfficial", true),
     keyshop: GM_getValue("showKeyshop", true),
     compact: GM_getValue("compactView", true),
-    subDisplay: GM_getValue("showSubDisplay", true),
+    subDisplay: GM_getValue("showSubDisplay", false),
     useApi: GM_getValue("useApi", false),
     enableScraping: GM_getValue("enableScraping", true)
   };

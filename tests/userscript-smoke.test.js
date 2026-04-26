@@ -158,4 +158,26 @@ describe("GG.deals Steam Companion userscript", () => {
     expect(window.document.querySelector("#gg-official-price")?.textContent).toBe("Free");
     expect(window.document.querySelector(".gg-view-offers").href).toBe("https://gg.deals/game/example/");
   });
+
+  test("disables bundle and sub inline displays by default", async () => {
+    const { window } = createSteamDom({
+      requestHandler: ({ onload }) => {
+        setTimeout(() => onload({
+          status: 403,
+          statusText: "Forbidden",
+          responseText: "<html>Cloudflare challenge</html>"
+        }), 0);
+      }
+    });
+
+    await wait(700);
+
+    const toggle = window.document.querySelector("#gg-toggle-sub-display");
+    const compactToggle = window.document.querySelector("#gg-toggle-sub-display-compact");
+
+    expect(toggle).toBeTruthy();
+    expect(toggle.checked).toBe(false);
+    expect(compactToggle).toBeTruthy();
+    expect(compactToggle.checked).toBe(false);
+  });
 });
