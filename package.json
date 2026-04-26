@@ -7,6 +7,7 @@
     "build:extension": "bun scripts/build-extension.ts",
     "lint": "node --check userscript.user.js",
     "release:version": "bun scripts/release-version.ts",
+    "release:verify": "bun scripts/verify-release-version.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "check": "bun run lint && bun run typecheck && bun test && bun run build:extension"
