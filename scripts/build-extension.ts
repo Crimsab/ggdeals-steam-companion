@@ -1,6 +1,7 @@
 import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { basename, join, relative } from "node:path";
 import JSZip from "jszip";
+import sharp from "sharp";
 
 const root = new URL("..", import.meta.url).pathname;
 const distDir = join(root, "dist", "chrome-extension");
@@ -78,20 +79,10 @@ async function buildIcons() {
 
   await Promise.all([16, 32, 48, 128].map(async (size) => {
     const output = join(iconDir, `icon-${size}.png`);
-    const result = Bun.spawnSync([
-      "rsvg-convert",
-      "-w",
-      String(size),
-      "-h",
-      String(size),
-      "-o",
-      output,
-      join(root, "extension", "icons", "icon.svg")
-    ]);
-
-    if (!result.success) {
-      throw new Error(`rsvg-convert failed for ${size}px icon`);
-    }
+    await sharp(join(root, "extension", "icons", "icon.png"))
+      .resize(size, size, { fit: "cover" })
+      .png()
+      .toFile(output);
   }));
 }
 

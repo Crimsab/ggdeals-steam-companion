@@ -20,9 +20,6 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y librsvg2-bin
-
       - name: Install dependencies
         run: bun install --frozen-lockfile
 

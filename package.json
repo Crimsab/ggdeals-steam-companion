@@ -17,6 +17,7 @@
     "@types/chrome": "^0.1.40",
     "jsdom": "^27.3.0",
     "jszip": "^3.10.1",
+    "sharp": "^0.34.5",
     "typescript": "^6.0.3"
   }
 }
