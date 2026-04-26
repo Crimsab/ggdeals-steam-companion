@@ -11,11 +11,11 @@ afterEach(() => {
   }
 });
 
-function createSteamDom({ values = {}, requestHandler }) {
+function createSteamDom({ values = {}, requestHandler, body = "<div id=\"game_area_purchase\"></div>", url = "https://store.steampowered.com/app/730/CounterStrike_2/" }) {
   const dom = new JSDOM(
-    "<!doctype html><html><head></head><body><div id=\"game_area_purchase\"></div></body></html>",
+    `<!doctype html><html><head></head><body>${body}</body></html>`,
     {
-      url: "https://store.steampowered.com/app/730/CounterStrike_2/",
+      url,
       runScripts: "dangerously",
       resources: "usable",
       pretendToBeVisual: true
@@ -46,6 +46,9 @@ function wait(ms) {
 describe("GG.deals Steam Companion userscript", () => {
   test("keeps the fallback UI visible when GG.deals scraping is blocked by Cloudflare", async () => {
     const { window, store } = createSteamDom({
+      values: {
+        enableScraping: true
+      },
       requestHandler: ({ onload }) => {
         setTimeout(() => onload({
           status: 403,
@@ -76,7 +79,8 @@ describe("GG.deals Steam Companion userscript", () => {
     const { window } = createSteamDom({
       values: {
         useApi: true,
-        apiKey: secret
+        apiKey: secret,
+        enableScraping: true
       },
       requestHandler: ({ url, onload }) => {
         const response = url.includes("api.gg.deals")
@@ -179,5 +183,57 @@ describe("GG.deals Steam Companion userscript", () => {
     expect(toggle.checked).toBe(false);
     expect(compactToggle).toBeTruthy();
     expect(compactToggle.checked).toBe(false);
+  });
+
+  test("disables web scraping by default", async () => {
+    const { window, store } = createSteamDom({
+      requestHandler: () => {
+        throw new Error("No network requests should be made");
+      }
+    });
+
+    await wait(700);
+
+    const scrapingToggle = window.document.querySelector("#gg-toggle-enable-scraping");
+    const compactScrapingToggle = window.document.querySelector("#gg-toggle-enable-scraping-compact");
+
+    expect(scrapingToggle).toBeTruthy();
+    expect(scrapingToggle.checked).toBe(false);
+    expect(compactScrapingToggle).toBeTruthy();
+    expect(compactScrapingToggle.checked).toBe(false);
+    expect(store.get("enableScraping")).toBe(false);
+    expect(window.document.querySelector(".gg-unavailable-notice")?.textContent).toContain("Scraping is disabled");
+  });
+
+  test("keeps bundle and sub inline displays hidden after price updates when disabled", async () => {
+    const body = `
+      <div id="game_area_purchase"></div>
+      <div class="game_area_purchase_game">
+        <input name="subid" value="12345">
+        <div class="game_purchase_action"></div>
+      </div>
+      <div class="game_area_purchase_game">
+        <input name="bundleid" value="67890">
+        <div class="game_purchase_action"></div>
+      </div>
+    `;
+
+    const { window } = createSteamDom({
+      values: {
+        enableScraping: false,
+        showSubDisplay: false
+      },
+      body,
+      requestHandler: () => {
+        throw new Error("No network requests should be made");
+      }
+    });
+
+    await wait(1200);
+
+    const inlineDisplays = Array.from(window.document.querySelectorAll(".gg-deals-container.bundle-sub-display"));
+    expect(inlineDisplays).toHaveLength(2);
+    expect(inlineDisplays.every((display) => display.style.display === "none")).toBe(true);
+    expect(inlineDisplays.map((display) => display.textContent).join(" ")).toContain("Scraping is disabled");
   });
 });

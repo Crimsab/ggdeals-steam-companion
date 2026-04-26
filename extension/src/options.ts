@@ -27,7 +27,7 @@ const saved = await chrome.storage.local.get({
   compactView: true,
   apiKey: "",
   preferredRegion: "us",
-  enableScraping: true,
+  enableScraping: false,
   showSubDisplay: false
 });
 

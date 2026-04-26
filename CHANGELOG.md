@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 2.0.1 - 2026-04-26
+
+- Keep bundle/sub inline displays hidden after price updates when Bundle/Sub Display is disabled.
+- Disable web scraping by default in both the userscript and Chrome/Steam extension settings.
+
 ## 2.0.0 - 2026-04-26
 
 - Keep the GG.deals panel visible when Cloudflare blocks web scraping, with a fallback "View Offers" link.

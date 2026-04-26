@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GG.deals Steam Companion
 // @namespace    http://tampermonkey.net/
-// @version      2.0.0
+// @version      2.0.1
 // @description  Shows lowest price from gg.deals on Steam game pages
 // @author       Crimsab
 // @license      GPL-3.0-or-later
@@ -754,13 +754,13 @@
     compact: GM_getValue("compactView", true),
     subDisplay: GM_getValue("showSubDisplay", false),
     useApi: GM_getValue("useApi", false),
-    enableScraping: GM_getValue("enableScraping", true)
+    enableScraping: GM_getValue("enableScraping", false)
   };
   
   // Force set enableScraping in GM storage if it doesn't exist yet
   if (GM_getValue("enableScraping") === undefined) {
-    GM_setValue("enableScraping", true);
-    console.log("GG.deals: Initializing enableScraping setting to true");
+    GM_setValue("enableScraping", false);
+    console.log("GG.deals: Initializing enableScraping setting to false");
   }
   
   // Get API key if saved
@@ -2121,7 +2121,7 @@
             // Check if API should be used
             const useApi = GM_getValue("useApi", false);
             const apiKey = GM_getValue("apiKey", "");
-            const enableScraping = GM_getValue("enableScraping", true);
+            const enableScraping = GM_getValue("enableScraping", false);
             
             // Try to use API if enabled and key is available
             // Note: API works for app IDs and sub IDs, not bundle IDs
@@ -2388,7 +2388,8 @@
     const links = container.querySelectorAll(".gg-view-offers");
 
     if (data) {
-        container.style.display = "";
+        const isBundleSubDisplay = container.classList.contains('bundle-sub-display');
+        container.style.display = isBundleSubDisplay && !GM_getValue("showSubDisplay", false) ? "none" : "";
         const isUnavailable = data.noData || data.unavailableReason || data.cloudflareBlocked;
         const unavailableDisplay = isUnavailable ? getUnavailableDisplay(data) : null;
         const displayData = isUnavailable ? {
