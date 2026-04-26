@@ -1977,15 +1977,13 @@
   }
 
   function initializeSettingsAccordions(container) {
-    const shouldOpenApi = !toggleStates.useApi || !apiKey;
-
     container.querySelectorAll(".gg-settings-section").forEach((section) => {
       const title = section.querySelector(".gg-settings-title");
       if (!title) return;
 
       const titleText = title.textContent.trim();
       const isApiSection = titleText.includes("API");
-      const startsOpen = isApiSection && shouldOpenApi;
+      const startsOpen = isApiSection;
 
       title.classList.add("gg-accordion-title");
       title.setAttribute("role", "button");
