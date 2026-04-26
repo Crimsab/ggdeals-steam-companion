@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GG.deals Steam Companion</title>
+    <link rel="stylesheet" href="options.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="panel">
+        <header class="header">
+          <div>
+            <p class="eyebrow">Chrome extension</p>
+            <h1>GG.deals Steam Companion</h1>
+          </div>
+          <span id="status" class="status">Saved locally</span>
+        </header>
+
+        <form id="settings-form" class="form">
+          <label class="toggle">
+            <input id="useApi" type="checkbox">
+            <span>
+              <strong>Use GG.deals API</strong>
+              <small>Recommended when Cloudflare blocks web scraping.</small>
+            </span>
+          </label>
+
+          <label class="field">
+            <span>API key</span>
+            <input id="apiKey" type="password" autocomplete="off" placeholder="Paste your GG.deals API key">
+          </label>
+
+          <label class="field">
+            <span>Region</span>
+            <select id="preferredRegion">
+              <option value="us">USA (USD)</option>
+              <option value="gb">UK (GBP)</option>
+              <option value="eu">Europe (EUR)</option>
+              <option value="ca">Canada (CAD)</option>
+              <option value="au">Australia (AUD)</option>
+              <option value="br">Brazil (BRL)</option>
+              <option value="tr">Turkey (TRY)</option>
+              <option value="pl">Poland (PLN)</option>
+              <option value="it">Italy (EUR)</option>
+              <option value="de">Germany (EUR)</option>
+              <option value="fr">France (EUR)</option>
+              <option value="es">Spain (EUR)</option>
+            </select>
+          </label>
+
+          <label class="toggle">
+            <input id="enableScraping" type="checkbox">
+            <span>
+              <strong>Allow web scraping fallback</strong>
+              <small>May show a Cloudflare fallback instead of prices.</small>
+            </span>
+          </label>
+
+          <div class="actions">
+            <button type="submit">Save settings</button>
+            <button id="clearCache" type="button" class="secondary">Clear cache</button>
+          </div>
+        </form>
+      </section>
+    </main>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

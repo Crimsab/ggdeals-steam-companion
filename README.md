@@ -10,6 +10,8 @@ A userscript that enhances Steam store pages by displaying price comparisons fro
 
 ## Installation
 
+### Userscript
+
 1. First, install a userscript manager:
    - [Tampermonkey](https://www.tampermonkey.net/) (Recommended)
    - [Violentmonkey](https://violentmonkey.github.io/)
@@ -23,6 +25,17 @@ A userscript that enhances Steam store pages by displaying price comparisons fro
    - Create a new script
    - Copy and paste the contents from [this link](https://raw.githubusercontent.com/Crimsab/ggdeals-steam-companion/main/userscript.user.js)
    - Save the script
+
+### Chrome Extension
+
+The Chrome extension is built from the same userscript core with a Manifest V3 wrapper.
+
+```bash
+bun install
+bun run build:extension
+```
+
+Then open `chrome://extensions`, enable Developer mode, choose "Load unpacked", and select `dist/chrome-extension`.
 
 ## Examples
 
@@ -97,6 +110,11 @@ bun run check
 ```
 
 The check command validates the userscript syntax and runs smoke tests against a mocked Steam page.
+
+`bun run build:extension` creates:
+
+- `dist/chrome-extension` for local unpacked installation
+- `dist/ggdeals-steam-companion-chrome.zip` for release upload
 
 ### Debug Information
 

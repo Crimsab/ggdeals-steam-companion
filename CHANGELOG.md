@@ -7,6 +7,7 @@
 - Escape saved API and color settings before injecting them into settings markup.
 - Add Bun-based syntax checks and jsdom smoke tests.
 - Add GitHub Actions CI for linting, testing, and userscript artifact upload.
+- Add a Manifest V3 Chrome extension build that reuses the userscript core.
 
 ## 1.6.4
 

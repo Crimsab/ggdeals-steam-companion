@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "GG.deals Steam Companion",
+  "version": "1.6.4",
+  "description": "Shows GG.deals price comparisons directly on Steam store pages.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://gg.deals/*",
+    "https://api.gg.deals/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://store.steampowered.com/app/*",
+        "https://store.steampowered.com/sub/*",
+        "https://store.steampowered.com/bundle/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "action": {
+    "default_title": "GG.deals Steam Companion",
+    "default_popup": "options.html"
+  }
+}

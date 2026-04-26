@@ -4,11 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:extension": "bun scripts/build-extension.ts",
     "lint": "node --check userscript.user.js",
+    "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "check": "bun run lint && bun test"
+    "check": "bun run lint && bun run typecheck && bun test && bun run build:extension"
   },
   "devDependencies": {
-    "jsdom": "^27.3.0"
+    "@types/bun": "^1.3.13",
+    "@types/chrome": "^0.1.40",
+    "jsdom": "^27.3.0",
+    "jszip": "^3.10.1",
+    "typescript": "^6.0.3"
   }
 }
