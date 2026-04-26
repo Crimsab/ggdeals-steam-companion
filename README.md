@@ -37,6 +37,40 @@ bun run build:extension
 
 Then open `chrome://extensions`, enable Developer mode, choose "Load unpacked", and select `dist/chrome-extension`.
 
+### Steam Browser Extension
+
+Steam uses a Chromium-based browser, so it can load custom unpacked extensions through its internal extensions page.
+
+1. Extract the extension folder if it is inside a `.zip` file.
+2. Make sure the extension folder contains a `manifest.json` file.
+
+   Example:
+
+   ```text
+   ggdeals-steam-companion/
+   ├── manifest.json
+   ├── background.js
+   ├── content.js
+   ├── options.html
+   └── options.js
+   ```
+
+3. Open Steam.
+4. Open the Steam browser and go to:
+
+   ```text
+   chrome://extensions
+   ```
+
+5. Enable **Developer mode**.
+6. Drag and drop the entire extension folder directly into the `chrome://extensions` page.
+
+   Do not select a single file. The full folder must be loaded.
+
+7. The extension should now appear in the extensions list.
+
+The normal **Load unpacked** button may not work correctly inside Steam because the Windows file picker can open in file-selection mode instead of folder-selection mode. Dragging the folder directly into the extensions page works as a workaround.
+
 ## Examples
 
 ### Full View
