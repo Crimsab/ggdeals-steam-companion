@@ -1,0 +1,14 @@
+{
+  "name": "ggdeals-steam-companion",
+  "version": "1.6.4",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "node --check userscript.user.js",
+    "test": "bun test",
+    "check": "bun run lint && bun test"
+  },
+  "devDependencies": {
+    "jsdom": "^27.3.0"
+  }
+}
