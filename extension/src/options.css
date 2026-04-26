@@ -91,6 +91,23 @@ h1 {
   line-height: 1.4;
 }
 
+.help-links {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: -2px;
+  font-size: 12px;
+}
+
+.help-links a {
+  color: #67c1f5;
+  text-decoration: none;
+}
+
+.help-links a:hover {
+  text-decoration: underline;
+}
+
 input,
 select {
   width: 100%;
