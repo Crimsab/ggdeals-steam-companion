@@ -11,6 +11,15 @@ if (!form || !statusEl || !useApi || !compactView || !apiKey || !preferredRegion
   throw new Error("Options page markup is incomplete");
 }
 
+const formEl = form;
+const status = statusEl;
+const useApiInput = useApi;
+const compactViewInput = compactView;
+const apiKeyInput = apiKey;
+const preferredRegionSelect = preferredRegion;
+const enableScrapingInput = enableScraping;
+const clearCacheButton = clearCache;
+
 const saved = await chrome.storage.local.get({
   useApi: false,
   compactView: true,
@@ -19,27 +28,44 @@ const saved = await chrome.storage.local.get({
   enableScraping: true
 });
 
-useApi.checked = Boolean(saved.useApi);
-compactView.checked = Boolean(saved.compactView);
-apiKey.value = String(saved.apiKey || "");
-preferredRegion.value = String(saved.preferredRegion || "us");
-enableScraping.checked = Boolean(saved.enableScraping);
+useApiInput.checked = Boolean(saved.useApi);
+compactViewInput.checked = Boolean(saved.compactView);
+apiKeyInput.value = String(saved.apiKey || "");
+preferredRegionSelect.value = String(saved.preferredRegion || "us");
+enableScrapingInput.checked = Boolean(saved.enableScraping);
 
-form.addEventListener("submit", async (event) => {
+formEl.addEventListener("submit", async (event) => {
   event.preventDefault();
-
-  await chrome.storage.local.set({
-    useApi: useApi.checked,
-    compactView: compactView.checked,
-    apiKey: apiKey.value.trim(),
-    preferredRegion: preferredRegion.value,
-    enableScraping: enableScraping.checked
-  });
-
-  flashStatus("Saved");
+  await saveSettings("Saved");
 });
 
-clearCache.addEventListener("click", async () => {
+[useApiInput, compactViewInput, preferredRegionSelect, enableScrapingInput].forEach((control) => {
+  control.addEventListener("change", () => {
+    saveSettings("Saved");
+  });
+});
+
+let apiKeySaveTimer: number | undefined;
+apiKeyInput.addEventListener("input", () => {
+  window.clearTimeout(apiKeySaveTimer);
+  apiKeySaveTimer = window.setTimeout(() => {
+    saveSettings("Saved");
+  }, 500);
+});
+
+async function saveSettings(message: string) {
+  await chrome.storage.local.set({
+    useApi: useApiInput.checked,
+    compactView: compactViewInput.checked,
+    apiKey: apiKeyInput.value.trim(),
+    preferredRegion: preferredRegionSelect.value,
+    enableScraping: enableScrapingInput.checked
+  });
+
+  flashStatus(message);
+}
+
+clearCacheButton.addEventListener("click", async () => {
   const values = await chrome.storage.local.get(null);
   const cacheKeys = Object.keys(values).filter((key) => key.startsWith("cache_"));
 
@@ -51,7 +77,6 @@ clearCache.addEventListener("click", async () => {
 });
 
 function flashStatus(message: string) {
-  const status = statusEl!;
   status.textContent = message;
   window.setTimeout(() => {
     status.textContent = "Saved locally";
