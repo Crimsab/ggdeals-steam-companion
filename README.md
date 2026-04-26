@@ -28,48 +28,25 @@ A userscript that enhances Steam store pages by displaying price comparisons fro
 
 ### Chrome Extension
 
-The Chrome extension is built from the same userscript core with a Manifest V3 wrapper.
+The Chrome extension is built from the same userscript core with a Manifest V3 wrapper:
 
 ```bash
 bun install
 bun run build:extension
 ```
 
-Then open `chrome://extensions`, enable Developer mode, choose "Load unpacked", and select `dist/chrome-extension`.
+For a normal Chromium browser, open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select `dist/chrome-extension`.
 
 ### Steam Browser Extension
 
-Steam uses a Chromium-based browser, so it can load custom unpacked extensions through its internal extensions page.
+Steam also uses a Chromium-based browser. After building the extension, load the generated `dist/chrome-extension` folder in Steam:
 
-1. Extract the extension folder if it is inside a `.zip` file.
-2. Make sure the extension folder contains a `manifest.json` file.
+1. Open Steam.
+2. Open the Steam browser and go to `chrome://extensions`.
+3. Enable **Developer mode**.
+4. Drag the `dist/chrome-extension` folder directly into the extensions page.
 
-   Example:
-
-   ```text
-   ggdeals-steam-companion/
-   ├── manifest.json
-   ├── background.js
-   ├── content.js
-   ├── options.html
-   └── options.js
-   ```
-
-3. Open Steam.
-4. Open the Steam browser and go to:
-
-   ```text
-   chrome://extensions
-   ```
-
-5. Enable **Developer mode**.
-6. Drag and drop the entire extension folder directly into the `chrome://extensions` page.
-
-   Do not select a single file. The full folder must be loaded.
-
-7. The extension should now appear in the extensions list.
-
-The normal **Load unpacked** button may not work correctly inside Steam because the Windows file picker can open in file-selection mode instead of folder-selection mode. Dragging the folder directly into the extensions page works as a workaround.
+Steam's **Load unpacked** button can open a file picker instead of a folder picker on Windows. Dragging the generated folder into the page avoids that Steam-specific picker issue.
 
 ## Examples
 

@@ -16,6 +16,7 @@ await buildContentScript();
 await copyText("extension/manifest.json", "manifest.json");
 await copyText("extension/src/options.html", "options.html");
 await copyText("extension/src/options.css", "options.css");
+await buildIcons();
 
 await rm(zipPath, { force: true });
 await writeZip(distDir, zipPath);
@@ -69,6 +70,29 @@ async function buildContentScript() {
 async function copyText(source: string, destination: string) {
   const content = await readFile(join(root, source), "utf8");
   await writeFile(join(distDir, destination), content);
+}
+
+async function buildIcons() {
+  const iconDir = join(distDir, "icons");
+  await mkdir(iconDir, { recursive: true });
+
+  await Promise.all([16, 32, 48, 128].map(async (size) => {
+    const output = join(iconDir, `icon-${size}.png`);
+    const result = Bun.spawnSync([
+      "rsvg-convert",
+      "-w",
+      String(size),
+      "-h",
+      String(size),
+      "-o",
+      output,
+      join(root, "extension", "icons", "icon.svg")
+    ]);
+
+    if (!result.success) {
+      throw new Error(`rsvg-convert failed for ${size}px icon`);
+    }
+  }));
 }
 
 async function writeZip(sourceDir: string, outputPath: string) {
