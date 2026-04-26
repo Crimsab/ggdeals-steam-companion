@@ -1,23 +1,26 @@
 const form = document.querySelector<HTMLFormElement>("#settings-form");
 const statusEl = document.querySelector<HTMLElement>("#status");
 const useApi = document.querySelector<HTMLInputElement>("#useApi");
+const compactView = document.querySelector<HTMLInputElement>("#compactView");
 const apiKey = document.querySelector<HTMLInputElement>("#apiKey");
 const preferredRegion = document.querySelector<HTMLSelectElement>("#preferredRegion");
 const enableScraping = document.querySelector<HTMLInputElement>("#enableScraping");
 const clearCache = document.querySelector<HTMLButtonElement>("#clearCache");
 
-if (!form || !statusEl || !useApi || !apiKey || !preferredRegion || !enableScraping || !clearCache) {
+if (!form || !statusEl || !useApi || !compactView || !apiKey || !preferredRegion || !enableScraping || !clearCache) {
   throw new Error("Options page markup is incomplete");
 }
 
 const saved = await chrome.storage.local.get({
   useApi: false,
+  compactView: true,
   apiKey: "",
   preferredRegion: "us",
   enableScraping: true
 });
 
 useApi.checked = Boolean(saved.useApi);
+compactView.checked = Boolean(saved.compactView);
 apiKey.value = String(saved.apiKey || "");
 preferredRegion.value = String(saved.preferredRegion || "us");
 enableScraping.checked = Boolean(saved.enableScraping);
@@ -27,6 +30,7 @@ form.addEventListener("submit", async (event) => {
 
   await chrome.storage.local.set({
     useApi: useApi.checked,
+    compactView: compactView.checked,
     apiKey: apiKey.value.trim(),
     preferredRegion: preferredRegion.value,
     enableScraping: enableScraping.checked

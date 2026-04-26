@@ -729,7 +729,7 @@
   const toggleStates = {
     official: GM_getValue("showOfficial", true),
     keyshop: GM_getValue("showKeyshop", true),
-    compact: GM_getValue("compactView", false),
+    compact: GM_getValue("compactView", true),
     subDisplay: GM_getValue("showSubDisplay", true),
     useApi: GM_getValue("useApi", false),
     enableScraping: GM_getValue("enableScraping", true)
@@ -1198,7 +1198,7 @@
   function createPriceContainer() {
     const container = document.createElement("div");
     // Get the saved compact state
-    const isCompact = GM_getValue("compactView", false);
+    const isCompact = GM_getValue("compactView", true);
     const escapedApiKey = escapeHtmlAttribute(apiKey);
     const escapedButtonBackground = escapeHtmlAttribute(savedColors.buttonBackground);
     container.className = "gg-deals-container" + (isCompact ? " compact" : "");
@@ -1257,7 +1257,7 @@
                                 </label>
                                 <label class="gg-toggle ${toggleStates.compact ? "active" : ""}" title="Toggle Compact View">
                                     <input type="checkbox" id="gg-toggle-compact-menu" ${toggleStates.compact ? "checked" : ""}>
-                                    <label>Compact</label>
+                                    <label>Compact (recommended)</label>
                                 </label>
                                 <label class="gg-toggle ${toggleStates.subDisplay ? "active" : ""}" title="Toggle Sub/Bundle Displays">
                                     <input type="checkbox" id="gg-toggle-sub-display-compact" ${toggleStates.subDisplay ? "checked" : ""}>
@@ -1404,7 +1404,7 @@
                         </label>
                         <label class="gg-toggle ${toggleStates.compact ? "active" : ""}" title="Toggle Compact View">
                             <input type="checkbox" id="gg-toggle-compact" ${toggleStates.compact ? "checked" : ""}>
-                            <label>Compact</label>
+                            <label>Compact (recommended)</label>
                         </label>
                         <label class="gg-toggle ${toggleStates.subDisplay ? "active" : ""}" title="Toggle Sub/Bundle Displays">
                             <input type="checkbox" id="gg-toggle-sub-display" ${toggleStates.subDisplay ? "checked" : ""}>
