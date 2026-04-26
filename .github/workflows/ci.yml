@@ -37,5 +37,5 @@ jobs:
         with:
           name: ggdeals-steam-companion-chrome
           path: |
-            dist/chrome-extension
+            dist/ggdeals-extension
             dist/ggdeals-steam-companion-chrome.zip

@@ -4,10 +4,12 @@ import JSZip from "jszip";
 import sharp from "sharp";
 
 const root = new URL("..", import.meta.url).pathname;
-const distDir = join(root, "dist", "chrome-extension");
+const distDir = join(root, "dist", "ggdeals-extension");
+const legacyDistDir = join(root, "dist", "chrome-extension");
 const zipPath = join(root, "dist", "ggdeals-steam-companion-chrome.zip");
 
 await rm(distDir, { recursive: true, force: true });
+await rm(legacyDistDir, { recursive: true, force: true });
 await mkdir(distDir, { recursive: true });
 
 await buildEntry("extension/src/background.ts", "background.js");

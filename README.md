@@ -10,6 +10,26 @@ A userscript that enhances Steam store pages by displaying price comparisons fro
 
 ## Installation
 
+### Steam Client Extension (Recommended)
+
+Download the latest extension archive from the GitHub release:
+
+**[Download GG.deals Steam Companion Extension](https://github.com/Crimsab/ggdeals-steam-companion/releases/latest/download/ggdeals-steam-companion-chrome.zip)**
+
+Steam uses a Chromium-based browser, so the extension can be loaded directly inside the Steam client:
+
+1. Download and extract the extension archive.
+2. Open Steam.
+3. Open a Steam store page, for example:
+   `https://store.steampowered.com/app/1158310/Crusader_Kings_III/`
+4. Right-click a clickable link on the page and choose **Open link in new tab**.
+5. In the Steam browser address bar, open:
+   `chrome://extensions`
+6. Enable **Developer mode**.
+7. Drag the extracted extension folder directly into the `chrome://extensions` page.
+
+Steam's **Load unpacked** button can open a file picker instead of a folder picker on Windows. Dragging the whole extracted folder into the extensions page avoids that Steam-specific picker issue.
+
 ### Userscript
 
 1. First, install a userscript manager:
@@ -35,18 +55,7 @@ bun install
 bun run build:extension
 ```
 
-For a normal Chromium browser, open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select `dist/chrome-extension`.
-
-### Steam Browser Extension
-
-Steam also uses a Chromium-based browser. After building the extension, load the generated `dist/chrome-extension` folder in Steam:
-
-1. Open Steam.
-2. Open the Steam browser and go to `chrome://extensions`.
-3. Enable **Developer mode**.
-4. Drag the `dist/chrome-extension` folder directly into the extensions page.
-
-Steam's **Load unpacked** button can open a file picker instead of a folder picker on Windows. Dragging the generated folder into the page avoids that Steam-specific picker issue.
+For a normal Chromium browser, open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select `dist/ggdeals-extension`.
 
 ## Examples
 
@@ -124,7 +133,7 @@ The check command validates the userscript syntax and runs smoke tests against a
 
 `bun run build:extension` creates:
 
-- `dist/chrome-extension` for local unpacked installation
+- `dist/ggdeals-extension` for local unpacked installation
 - `dist/ggdeals-steam-companion-chrome.zip` for release upload
 
 To prepare a release version:
