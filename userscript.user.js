@@ -727,6 +727,18 @@
   
   // Get API key if saved
   const apiKey = GM_getValue("apiKey", "");
+
+  function escapeHtmlAttribute(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function redactApiUrl(url) {
+    return String(url).replace(/([?&]key=)[^&]*/i, "$1[redacted]");
+  }
   
   // Get preferred region/currency (default: us)
   const preferredRegion = GM_getValue("preferredRegion", "us");
@@ -997,6 +1009,7 @@
 
     // Steam sub IDs are no longer supported, use app ID for both
     const apiUrl = `https://api.gg.deals/v1/prices/by-steam-app-id/?ids=${effectiveSteamId}&key=${apiKey}&region=${region}`;
+    const safeApiUrl = redactApiUrl(apiUrl);
     
     try {
       const response = await rateLimitedRequest(apiUrl);
@@ -1006,7 +1019,7 @@
         console.error(`GG.deals API Error Details:`, {
           status: response.status,
           statusText: response.statusText,
-          url: apiUrl,
+          url: safeApiUrl,
           originalSteamId: steamId,
           effectiveSteamId: effectiveSteamId,
           steamType: steamType,
@@ -1103,7 +1116,7 @@
         effectiveSteamId: effectiveSteamId,
         steamType: steamType,
         region: region,
-        apiUrl: apiUrl,
+        apiUrl: safeApiUrl,
         stack: error.stack,
         timestamp: new Date().toISOString()
       });
@@ -1115,6 +1128,8 @@
     const container = document.createElement("div");
     // Get the saved compact state
     const isCompact = GM_getValue("compactView", false);
+    const escapedApiKey = escapeHtmlAttribute(apiKey);
+    const escapedButtonBackground = escapeHtmlAttribute(savedColors.buttonBackground);
     container.className = "gg-deals-container" + (isCompact ? " compact" : "");
     container.innerHTML = `
             <div class="gg-header">
@@ -1191,7 +1206,7 @@
                                 <div>
                                     <div class="gg-api-key-wrapper">
                                         <input type="password" id="gg-api-key-compact" class="gg-api-key-input" 
-                                               placeholder="Enter your GG.deals API key" value="${apiKey}">
+                                               placeholder="Enter your GG.deals API key" value="${escapedApiKey}">
                                         <button type="button" class="gg-toggle-visibility" title="Show/Hide API Key">
                                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                                                 <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
@@ -1242,7 +1257,7 @@
                                     </div>
                                     <div class="gg-color-item">
                                         <div class="gg-color-label">Button Background</div>
-                                        <input type="text" id="gg-color-button-bg-compact" class="gg-api-key-input" value="${savedColors.buttonBackground}">
+                                        <input type="text" id="gg-color-button-bg-compact" class="gg-api-key-input" value="${escapedButtonBackground}">
                                     </div>
                                     <div class="gg-color-item">
                                         <div class="gg-color-label">Button Text</div>
@@ -1334,7 +1349,7 @@
                         <div>
                             <div class="gg-api-key-wrapper">
                                 <input type="password" id="gg-api-key" class="gg-api-key-input" 
-                                       placeholder="Enter your GG.deals API key" value="${apiKey}">
+                                       placeholder="Enter your GG.deals API key" value="${escapedApiKey}">
                                 <button type="button" class="gg-toggle-visibility" title="Show/Hide API Key">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                                         <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
@@ -1385,7 +1400,7 @@
                             </div>
                              <div class="gg-color-item">
                                 <div class="gg-color-label">Button Background</div>
-                                <input type="text" id="gg-color-button-bg" class="gg-api-key-input" value="${savedColors.buttonBackground}">
+                                <input type="text" id="gg-color-button-bg" class="gg-api-key-input" value="${escapedButtonBackground}">
                             </div>
                             <div class="gg-color-item">
                                 <div class="gg-color-label">Button Text</div>
