@@ -94,8 +94,8 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 ## Known Limitations
 
-- **Bundles**: Always use web scraping, never API (GG.deals API doesn't support Steam bundles)
-- **Steam Sub IDs**: No longer supported by GG.deals API - script automatically extracts app IDs from Steam pages (I don't know why they removed it)
+- **API key required**: API mode needs a valid GG.deals API key.
+- **Steam packages and bundles**: Supported through GG.deals API endpoints when API mode is enabled.
 - **Cloudflare Protection**: GG.deals website uses Cloudflare which may block automated requests, like the Steam Resolvers (HTTP 403 errors)
 - **API vs Web Scraping**: API is recommended for best reliability and performance
 - **Cloudflared**: Cloudflare Tunnel does not bypass third-party Cloudflare challenges. It can expose your own services, but it cannot make GG.deals scraping reliable.
@@ -106,7 +106,7 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 **"No data found for this game"**
 - This usually means the game isn't in GG.deals database
-- For Steam subs, the script now automatically extracts the correct app ID
+- Steam apps, packages, and bundles use their matching GG.deals API endpoint when API mode is enabled
 - Try refreshing the page or using the manual refresh button
 
 **HTTP 403 Errors**

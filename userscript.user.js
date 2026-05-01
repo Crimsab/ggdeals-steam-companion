@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GG.deals Steam Companion
 // @namespace    http://tampermonkey.net/
-// @version      2.0.1
+// @version      2.1.0
 // @description  Shows lowest price from gg.deals on Steam game pages
 // @author       Crimsab
 // @license      GPL-3.0-or-later
@@ -20,12 +20,10 @@
 // @updateURL    https://raw.githubusercontent.com/Crimsab/ggdeals-steam-companion/main/userscript.user.js
 // ==/UserScript==
 
-// KNOWN LIMITATIONS: 
-// Bundles always use web scraping, never API. The official api does not support steam bundles, giving null results.
-// Subs (packages) and Apps can use either API or web scraping.
-// Steam sub IDs are no longer supported by the API - all requests use app IDs.
-// "Enable Scraping" toggle controls whether web scraping is used when API is disabled or fails.
-// GG.deals website now uses Cloudflare protection which blocks automated requests (HTTP 403 errors). So most of the resolvers are disabled. 
+// NOTES:
+// Apps, packages/subs, and bundles can use the official GG.deals API when configured.
+// "Enable Scraping" controls whether web scraping is used when API is disabled or fails.
+// GG.deals website uses Cloudflare protection which may block automated scraping (HTTP 403 errors).
 
 (function () {
   "use strict";
@@ -1052,29 +1050,14 @@
     return requestPromise;
   }
 
-  // Function to extract app ID from Steam page URL
-  function extractAppIdFromSteamPage() {
-    try {
-      // Look for app ID in the current URL
-      const urlMatch = window.location.pathname.match(/\/app\/(\d+)/);
-      if (urlMatch) {
-        return urlMatch[1];
-      }
-      
-      // Look for app ID in page elements (fallback)
-      const appIdElement = document.querySelector('input[name="appid"]') || 
-                          document.querySelector('[data-appid]') ||
-                          document.querySelector('.game_area_purchase_game input[name="appid"]');
-      
-      if (appIdElement) {
-        return appIdElement.value || appIdElement.getAttribute('data-appid');
-      }
-      
-      return null;
-    } catch (error) {
-      console.warn("GG.deals: Error extracting app ID from Steam page:", error);
-      return null;
-    }
+  function getPricesApiEndpoint(steamType) {
+    const endpointByType = {
+      app: "prices/by-steam-app-id",
+      sub: "prices/by-steam-sub-id",
+      bundle: "prices/by-steam-bundle-id"
+    };
+
+    return endpointByType[steamType] || endpointByType.app;
   }
 
   // New function to fetch data using GG.deals API
@@ -1088,18 +1071,9 @@
     // Get preferred region
     const region = GM_getValue("preferredRegion", "us");
 
-    // For subs, try to extract the actual app ID from the Steam page
-    let effectiveSteamId = steamId;
-    if (steamType === 'sub') {
-      const extractedAppId = extractAppIdFromSteamPage();
-      if (extractedAppId && extractedAppId !== steamId) {
-        console.log(`GG.deals: Using extracted app ID ${extractedAppId} instead of sub ID ${steamId}`);
-        effectiveSteamId = extractedAppId;
-      }
-    }
-
-    // Steam sub IDs are no longer supported, use app ID for both
-    const apiUrl = `https://api.gg.deals/v1/prices/by-steam-app-id/?ids=${effectiveSteamId}&key=${apiKey}&region=${region}`;
+    const apiEndpoint = getPricesApiEndpoint(steamType);
+    const effectiveSteamId = steamId;
+    const apiUrl = `https://api.gg.deals/v1/${apiEndpoint}/?ids=${effectiveSteamId}&key=${apiKey}&region=${region}`;
     const safeApiUrl = redactApiUrl(apiUrl);
     
     try {
@@ -2124,9 +2098,8 @@
             const enableScraping = GM_getValue("enableScraping", false);
             
             // Try to use API if enabled and key is available
-            // Note: API works for app IDs and sub IDs, not bundle IDs
-            // Bundle pages always use web scraping regardless of API settings
-            if (useApi && apiKey && (type === 'app' || type === 'sub')) {
+            // API supports Steam app, package/sub, and bundle IDs.
+            if (useApi && apiKey && (type === 'app' || type === 'sub' || type === 'bundle')) {
                 try {
                     // Use the ID directly, whether it's an app or sub ID
                     const itemId = id;

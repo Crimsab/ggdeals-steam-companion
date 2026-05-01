@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 2.1.0 - 2026-05-01
+
+- Use the new GG.deals API price endpoints for Steam packages and bundles.
+- Keep app, package/sub, and bundle API requests on their matching Steam ID type instead of converting package IDs to app IDs.
+- Add smoke coverage for package and bundle API endpoint selection.
+
 ## 2.0.1 - 2026-04-26
 
 - Keep bundle/sub inline displays hidden after price updates when Bundle/Sub Display is disabled.

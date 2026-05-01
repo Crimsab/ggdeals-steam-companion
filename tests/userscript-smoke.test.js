@@ -163,6 +163,90 @@ describe("GG.deals Steam Companion userscript", () => {
     expect(window.document.querySelector(".gg-view-offers").href).toBe("https://gg.deals/game/example/");
   });
 
+  test("uses the package prices API for Steam sub pages", async () => {
+    const subId = "1025501";
+    const { window } = createSteamDom({
+      url: `https://store.steampowered.com/sub/${subId}/`,
+      body: "<div class=\"game_area_purchase_game\"><div class=\"game_purchase_action\"></div></div>",
+      values: {
+        useApi: true,
+        apiKey: "test-key",
+        enableScraping: false
+      },
+      requestHandler: ({ url, onload }) => {
+        expect(url).toContain("api.gg.deals/v1/prices/by-steam-sub-id/");
+        expect(url).toContain(`ids=${subId}`);
+        setTimeout(() => onload({
+          status: 200,
+          statusText: "OK",
+          responseText: JSON.stringify({
+            success: true,
+            data: {
+              [subId]: {
+                url: "https://gg.deals/pack/example-sub/",
+                prices: {
+                  currency: "$",
+                  currentRetail: 13.2,
+                  currentKeyshops: 10.25,
+                  historicalRetail: null,
+                  historicalKeyshops: null
+                }
+              }
+            }
+          })
+        }), 0);
+      }
+    });
+
+    await wait(900);
+
+    expect(window.document.querySelector(".gg-view-offers").href).toBe("https://gg.deals/pack/example-sub/");
+    expect(window.document.querySelector("#gg-compact-official-price")?.textContent).toBe("$13.2");
+    expect(window.document.querySelector("#gg-compact-keyshop-price")?.textContent).toBe("$10.25");
+  });
+
+  test("uses the bundle prices API for Steam bundle pages", async () => {
+    const bundleId = "36586";
+    const { window } = createSteamDom({
+      url: `https://store.steampowered.com/bundle/${bundleId}/`,
+      body: "<div class=\"game_area_purchase_game\"><div class=\"game_purchase_action\"></div></div>",
+      values: {
+        useApi: true,
+        apiKey: "test-key",
+        enableScraping: false
+      },
+      requestHandler: ({ url, onload }) => {
+        expect(url).toContain("api.gg.deals/v1/prices/by-steam-bundle-id/");
+        expect(url).toContain(`ids=${bundleId}`);
+        setTimeout(() => onload({
+          status: 200,
+          statusText: "OK",
+          responseText: JSON.stringify({
+            success: true,
+            data: {
+              [bundleId]: {
+                url: "https://gg.deals/pack/example-bundle/",
+                prices: {
+                  currency: "$",
+                  currentRetail: 128.06,
+                  currentKeyshops: null,
+                  historicalRetail: 99.99,
+                  historicalKeyshops: null
+                }
+              }
+            }
+          })
+        }), 0);
+      }
+    });
+
+    await wait(900);
+
+    expect(window.document.querySelector(".gg-view-offers").href).toBe("https://gg.deals/pack/example-bundle/");
+    expect(window.document.querySelector("#gg-compact-official-price")?.textContent).toBe("$128.06");
+    expect(window.document.querySelector("#gg-compact-keyshop-price")?.textContent).toBe("No data");
+  });
+
   test("disables bundle and sub inline displays by default", async () => {
     const { window } = createSteamDom({
       requestHandler: ({ onload }) => {
