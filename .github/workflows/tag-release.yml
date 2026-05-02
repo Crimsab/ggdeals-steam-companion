@@ -51,7 +51,7 @@ jobs:
           AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
           AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
         run: |
-          web-ext sign \
+          bunx web-ext sign \
             --source-dir dist/ggdeals-extension-firefox \
             --artifacts-dir dist/amo \
             --channel=listed \
