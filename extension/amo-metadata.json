@@ -20,15 +20,8 @@
     "en-US": "https://github.com/Crimsab/ggdeals-steam-companion/issues"
   },
   "requires_payment": false,
-  "tags": [
-    "steam",
-    "ggdeals",
-    "deals",
-    "games",
-    "prices"
-  ],
   "version": {
-    "license": "GPL-3.0-or-later",
+    "license": "GPL-3.0-only",
     "release_notes": {
       "en-US": "Adds the Firefox extension build generated from the same userscript core used by the Steam/Chrome extension."
     },
