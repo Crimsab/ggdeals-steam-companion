@@ -1,17 +1,21 @@
 {
   "name": "ggdeals-steam-companion",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "private": true,
   "type": "module",
   "scripts": {
     "build:extension": "bun scripts/build-extension.ts",
+    "build:extension:chrome": "bun scripts/build-extension.ts chrome",
+    "build:extension:firefox": "bun scripts/build-extension.ts firefox",
+    "build:source": "bun scripts/build-source-archive.ts",
     "check:visual": "bun scripts/visual-responsive-check.ts",
+    "lint:firefox": "web-ext lint --source-dir dist/ggdeals-extension-firefox --self-hosted",
     "lint": "node --check userscript.user.js",
     "release:version": "bun scripts/release-version.ts",
     "release:verify": "bun scripts/verify-release-version.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "check": "bun run lint && bun run typecheck && bun test && bun run build:extension"
+    "check": "bun run lint && bun run typecheck && bun test && bun run build:extension && bun run lint:firefox && bun run build:source"
   },
   "devDependencies": {
     "@types/bun": "^1.3.13",
@@ -20,6 +24,7 @@
     "jszip": "^3.10.1",
     "playwright": "^1.59.1",
     "sharp": "^0.34.5",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "web-ext": "^10.1.0"
   }
 }

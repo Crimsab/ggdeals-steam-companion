@@ -3,34 +3,72 @@ import { basename, join, relative } from "node:path";
 import JSZip from "jszip";
 import sharp from "sharp";
 
+type Platform = "chrome" | "firefox";
+
+type PlatformBuild = {
+  platform: Platform;
+  distDir: string;
+  zipPath: string;
+};
+
 const root = new URL("..", import.meta.url).pathname;
-const distDir = join(root, "dist", "ggdeals-extension");
-const legacyDistDir = join(root, "dist", "chrome-extension");
-const zipPath = join(root, "dist", "ggdeals-steam-companion-chrome.zip");
+const distRoot = join(root, "dist");
+const legacyDistDir = join(distRoot, "chrome-extension");
 
-await rm(distDir, { recursive: true, force: true });
+const builds: PlatformBuild[] = [
+  {
+    platform: "chrome",
+    distDir: join(distRoot, "ggdeals-extension"),
+    zipPath: join(distRoot, "ggdeals-steam-companion-chrome.zip")
+  },
+  {
+    platform: "firefox",
+    distDir: join(distRoot, "ggdeals-extension-firefox"),
+    zipPath: join(distRoot, "ggdeals-steam-companion-firefox.zip")
+  }
+];
+
+const requestedPlatforms = new Set<Platform>(
+  Bun.argv
+    .slice(2)
+    .filter((value): value is Platform => value === "chrome" || value === "firefox")
+);
+
+const selectedBuilds = requestedPlatforms.size > 0
+  ? builds.filter((build) => requestedPlatforms.has(build.platform))
+  : builds;
+
 await rm(legacyDistDir, { recursive: true, force: true });
-await mkdir(distDir, { recursive: true });
+await mkdir(distRoot, { recursive: true });
 
-await buildEntry("extension/src/background.ts", "background.js");
-await buildEntry("extension/src/options.ts", "options.js");
-await buildContentScript();
+for (const build of selectedBuilds) {
+  await buildExtension(build);
+}
 
-await copyText("extension/manifest.json", "manifest.json");
-await copyText("extension/src/options.html", "options.html");
-await copyText("extension/src/options.css", "options.css");
-await buildIcons();
+async function buildExtension(build: PlatformBuild) {
+  await rm(build.distDir, { recursive: true, force: true });
+  await mkdir(build.distDir, { recursive: true });
 
-await rm(zipPath, { force: true });
-await writeZip(distDir, zipPath);
+  await buildEntry(build, "extension/src/background.ts", "background.js");
+  await buildEntry(build, "extension/src/options.ts", "options.js");
+  await buildContentScript(build);
 
-console.log(`Built ${distDir}`);
-console.log(`Packed ${zipPath}`);
+  await writeManifest(build);
+  await copyText(build, "extension/src/options.html", "options.html");
+  await copyText(build, "extension/src/options.css", "options.css");
+  await buildIcons(build);
 
-async function buildEntry(entrypoint: string, outputFile: string) {
+  await rm(build.zipPath, { force: true });
+  await writeZip(build.distDir, build.zipPath);
+
+  console.log(`Built ${build.distDir}`);
+  console.log(`Packed ${build.zipPath}`);
+}
+
+async function buildEntry(build: PlatformBuild, entrypoint: string, outputFile: string) {
   const result = await Bun.build({
     entrypoints: [join(root, entrypoint)],
-    outdir: distDir,
+    outdir: build.distDir,
     target: "browser",
     format: "esm",
     minify: false,
@@ -43,13 +81,13 @@ async function buildEntry(entrypoint: string, outputFile: string) {
 
   const generatedName = basename(entrypoint).replace(/\.ts$/, ".js");
   if (generatedName !== outputFile) {
-    const generated = await readFile(join(distDir, generatedName), "utf8");
-    await writeFile(join(distDir, outputFile), generated);
-    await rm(join(distDir, generatedName));
+    const generated = await readFile(join(build.distDir, generatedName), "utf8");
+    await writeFile(join(build.distDir, outputFile), generated);
+    await rm(join(build.distDir, generatedName));
   }
 }
 
-async function buildContentScript() {
+async function buildContentScript(build: PlatformBuild) {
   const result = await Bun.build({
     entrypoints: [join(root, "extension/src/content-shim.ts")],
     target: "browser",
@@ -65,18 +103,43 @@ async function buildContentScript() {
   const shim = await result.outputs[0].text();
   const userscript = await readFile(join(root, "userscript.user.js"), "utf8");
   await writeFile(
-    join(distDir, "content.js"),
+    join(build.distDir, "content.js"),
     `${shim}\n\nwindow.__GG_DEALS_INSTALL_SHIM__().then(() => {\n${userscript}\n});\n`
   );
 }
 
-async function copyText(source: string, destination: string) {
-  const content = await readFile(join(root, source), "utf8");
-  await writeFile(join(distDir, destination), content);
+async function writeManifest(build: PlatformBuild) {
+  const manifest = JSON.parse(await readFile(join(root, "extension", "manifest.json"), "utf8"));
+
+  if (build.platform === "firefox") {
+    manifest.background = {
+      scripts: ["background.js"],
+      type: "module"
+    };
+    manifest.browser_specific_settings = {
+      gecko: {
+        id: "ggdeals-steam-companion@crimsab.github.io",
+        strict_min_version: "140.0",
+        data_collection_permissions: {
+          required: ["none"]
+        }
+      },
+      gecko_android: {
+        strict_min_version: "142.0"
+      }
+    };
+  }
+
+  await writeFile(join(build.distDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
-async function buildIcons() {
-  const iconDir = join(distDir, "icons");
+async function copyText(build: PlatformBuild, source: string, destination: string) {
+  const content = await readFile(join(root, source), "utf8");
+  await writeFile(join(build.distDir, destination), content);
+}
+
+async function buildIcons(build: PlatformBuild) {
+  const iconDir = join(build.distDir, "icons");
   await mkdir(iconDir, { recursive: true });
 
   await Promise.all([16, 32, 48, 128].map(async (size) => {

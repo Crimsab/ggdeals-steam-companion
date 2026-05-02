@@ -33,6 +33,22 @@ jobs:
       - name: Run checks
         run: bun run check
 
+      - name: Submit Firefox extension to AMO
+        env:
+          AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+          AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: |
+          web-ext sign \
+            --source-dir dist/ggdeals-extension-firefox \
+            --artifacts-dir dist/amo \
+            --channel=listed \
+            --amo-metadata extension/amo-metadata.json \
+            --upload-source-code dist/ggdeals-steam-companion-source.zip \
+            --approval-timeout=0 \
+            --no-input \
+            --api-key="$AMO_JWT_ISSUER" \
+            --api-secret="$AMO_JWT_SECRET"
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
@@ -42,3 +58,5 @@ jobs:
           files: |
             userscript.user.js
             dist/ggdeals-steam-companion-chrome.zip
+            dist/ggdeals-steam-companion-firefox.zip
+            dist/ggdeals-steam-companion-source.zip

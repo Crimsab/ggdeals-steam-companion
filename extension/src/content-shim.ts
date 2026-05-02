@@ -36,7 +36,8 @@ declare global {
 }
 
 window.__GG_DEALS_INSTALL_SHIM__ = async () => {
-  const storedValues = await chrome.storage.local.get(null);
+  const extensionApi = (globalThis as typeof globalThis & { browser?: typeof chrome }).browser ?? chrome;
+  const storedValues = await extensionApi.storage.local.get(null);
   const storageCache: Record<string, unknown> = { ...storedValues };
 
   window.GM_getValue = (key, defaultValue) => {
@@ -47,7 +48,7 @@ window.__GG_DEALS_INSTALL_SHIM__ = async () => {
 
   window.GM_setValue = (key, value) => {
     storageCache[key] = value;
-    chrome.storage.local.set({ [key]: value });
+    extensionApi.storage.local.set({ [key]: value });
   };
 
   window.GM_addStyle = (css) => {
@@ -64,7 +65,7 @@ window.__GG_DEALS_INSTALL_SHIM__ = async () => {
         }, details.timeout + 100)
       : null;
 
-    chrome.runtime.sendMessage({
+    extensionApi.runtime.sendMessage({
       type: "GM_XMLHTTP_REQUEST",
       request: {
         method: details.method,

@@ -7,6 +7,7 @@ const preferredRegion = document.querySelector<HTMLSelectElement>("#preferredReg
 const enableScraping = document.querySelector<HTMLInputElement>("#enableScraping");
 const showSubDisplay = document.querySelector<HTMLInputElement>("#showSubDisplay");
 const clearCache = document.querySelector<HTMLButtonElement>("#clearCache");
+const extensionApi = (globalThis as typeof globalThis & { browser?: typeof chrome }).browser ?? chrome;
 
 if (!form || !statusEl || !useApi || !compactView || !apiKey || !preferredRegion || !enableScraping || !showSubDisplay || !clearCache) {
   throw new Error("Options page markup is incomplete");
@@ -22,7 +23,7 @@ const enableScrapingInput = enableScraping;
 const showSubDisplayInput = showSubDisplay;
 const clearCacheButton = clearCache;
 
-const saved = await chrome.storage.local.get({
+const saved = await extensionApi.storage.local.get({
   useApi: false,
   compactView: true,
   apiKey: "",
@@ -58,7 +59,7 @@ apiKeyInput.addEventListener("input", () => {
 });
 
 async function saveSettings(message: string) {
-  await chrome.storage.local.set({
+  await extensionApi.storage.local.set({
     useApi: useApiInput.checked,
     compactView: compactViewInput.checked,
     apiKey: apiKeyInput.value.trim(),
@@ -71,11 +72,11 @@ async function saveSettings(message: string) {
 }
 
 clearCacheButton.addEventListener("click", async () => {
-  const values = await chrome.storage.local.get(null);
+  const values = await extensionApi.storage.local.get(null);
   const cacheKeys = Object.keys(values).filter((key) => key.startsWith("cache_"));
 
   if (cacheKeys.length > 0) {
-    await chrome.storage.local.remove(cacheKeys);
+    await extensionApi.storage.local.remove(cacheKeys);
   }
 
   flashStatus("Cache cleared");

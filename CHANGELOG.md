@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 2.2.0 - 2026-05-02
+
+- Add a Firefox extension build generated from the same userscript core.
+- Add Firefox extension linting, signing, and release artifacts to CI.
+- Publish a signed Firefox `.xpi` in GitHub releases.
+
 ## 2.1.1 - 2026-05-02
 
 - Fix compact layout responsiveness on Steam mobile and Big Picture style viewports.

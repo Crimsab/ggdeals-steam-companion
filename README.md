@@ -12,9 +12,9 @@ A userscript that enhances Steam store pages by displaying price comparisons fro
 
 ### Steam Client Extension (Recommended)
 
-Download the latest extension archive from the GitHub release:
+Download the latest Chrome/Steam extension archive from the GitHub release:
 
-**[Download GG.deals Steam Companion Extension](https://github.com/Crimsab/ggdeals-steam-companion/releases/latest/download/ggdeals-steam-companion-chrome.zip)**
+**[Download GG.deals Steam Companion Chrome/Steam Extension](https://github.com/Crimsab/ggdeals-steam-companion/releases/latest/download/ggdeals-steam-companion-chrome.zip)**
 
 Steam uses a Chromium-based browser, so the extension can be loaded directly inside the Steam client:
 
@@ -56,6 +56,14 @@ bun run build:extension
 ```
 
 For a normal Chromium browser, open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select `dist/ggdeals-extension`.
+
+### Firefox Extension
+
+The Firefox extension is submitted to Mozilla Add-ons automatically during releases:
+
+**[GG.deals Steam Companion on Firefox Add-ons](https://addons.mozilla.org/firefox/addon/ggdeals-steam-companion/)**
+
+Mozilla may review a new listed version before it appears publicly. For local temporary installation from source, build the extension, open `about:debugging#/runtime/this-firefox`, choose **Load Temporary Add-on**, and select `dist/ggdeals-extension-firefox/manifest.json`.
 
 ## Examples
 
@@ -133,8 +141,13 @@ The check command validates the userscript syntax and runs smoke tests against a
 
 `bun run build:extension` creates:
 
-- `dist/ggdeals-extension` for local unpacked installation
+- `dist/ggdeals-extension` for Chrome/Steam local unpacked installation
+- `dist/ggdeals-extension-firefox` for Firefox temporary installation
 - `dist/ggdeals-steam-companion-chrome.zip` for release upload
+- `dist/ggdeals-steam-companion-firefox.zip` for unsigned Firefox build inspection
+- `dist/ggdeals-steam-companion-source.zip` for Mozilla Add-ons source review
+
+GitHub Actions submits the Firefox build to Mozilla Add-ons when `AMO_JWT_ISSUER` and `AMO_JWT_SECRET` repository secrets are configured.
 
 To prepare a release version:
 

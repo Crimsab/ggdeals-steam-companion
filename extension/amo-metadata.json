@@ -1,0 +1,37 @@
+{
+  "name": {
+    "en-US": "GG.deals Steam Companion"
+  },
+  "slug": "ggdeals-steam-companion",
+  "summary": {
+    "en-US": "Compare GG.deals prices directly on Steam store pages."
+  },
+  "description": {
+    "en-US": "GG.deals Steam Companion adds a compact price comparison panel to Steam app, package, and bundle pages. It can use the official GG.deals API for reliable price lookups, keeps settings locally in the browser, and provides quick links to view offers on GG.deals."
+  },
+  "categories": [
+    "shopping",
+    "games-entertainment"
+  ],
+  "homepage": {
+    "en-US": "https://github.com/Crimsab/ggdeals-steam-companion"
+  },
+  "support_url": {
+    "en-US": "https://github.com/Crimsab/ggdeals-steam-companion/issues"
+  },
+  "requires_payment": false,
+  "tags": [
+    "steam",
+    "ggdeals",
+    "deals",
+    "games",
+    "prices"
+  ],
+  "version": {
+    "license": "GPL-3.0-or-later",
+    "release_notes": {
+      "en-US": "Adds the Firefox extension build generated from the same userscript core used by the Steam/Chrome extension."
+    },
+    "approval_notes": "The extension stores settings locally with browser storage. If the user enables API mode and enters a GG.deals API key, requests are sent to the official GG.deals API endpoints. The source archive attached to this submission contains the TypeScript sources, userscript source, build scripts, tests, and lockfile used to generate the submitted extension."
+  }
+}

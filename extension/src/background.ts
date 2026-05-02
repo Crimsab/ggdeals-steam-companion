@@ -11,7 +11,9 @@ type XmlHttpRequestMessage = {
 
 type ExtensionMessage = XmlHttpRequestMessage;
 
-chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendResponse) => {
+const extensionApi = (globalThis as typeof globalThis & { browser?: typeof chrome }).browser ?? chrome;
+
+extensionApi.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendResponse) => {
   if (message?.type !== "GM_XMLHTTP_REQUEST") {
     return false;
   }

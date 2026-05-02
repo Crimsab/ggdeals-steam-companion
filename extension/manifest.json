@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "GG.deals Steam Companion",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "description": "Shows GG.deals price comparisons directly on Steam store pages.",
   "icons": {
     "16": "icons/icon-16.png",

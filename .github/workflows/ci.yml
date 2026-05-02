@@ -39,3 +39,17 @@ jobs:
           path: |
             dist/ggdeals-extension
             dist/ggdeals-steam-companion-chrome.zip
+
+      - name: Upload Firefox extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ggdeals-steam-companion-firefox
+          path: |
+            dist/ggdeals-extension-firefox
+            dist/ggdeals-steam-companion-firefox.zip
+
+      - name: Upload source archive artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ggdeals-steam-companion-source
+          path: dist/ggdeals-steam-companion-source.zip
