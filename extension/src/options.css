@@ -11,14 +11,15 @@
 
 body {
   margin: 0;
-  min-width: 360px;
+  min-width: 0;
 }
 
 .shell {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 28px;
+  padding: clamp(12px, 5vw, 28px);
   background:
     linear-gradient(135deg, rgba(103, 193, 245, 0.14), transparent 42%),
     #0f1720;
@@ -26,10 +27,11 @@ body {
 
 .panel {
   width: min(560px, 100%);
+  max-width: 100%;
   border: 1px solid rgba(103, 193, 245, 0.22);
   background: #16202d;
   border-radius: 8px;
-  padding: 24px;
+  padding: clamp(16px, 5vw, 24px);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
 }
 
@@ -51,8 +53,9 @@ body {
 
 h1 {
   margin: 0;
-  font-size: 26px;
+  font-size: clamp(21px, 6vw, 26px);
   line-height: 1.1;
+  overflow-wrap: anywhere;
 }
 
 .status {
@@ -146,6 +149,7 @@ h1 {
 input,
 select {
   width: 100%;
+  min-width: 0;
   border: 1px solid rgba(103, 193, 245, 0.24);
   border-radius: 6px;
   background: #101923;
@@ -176,9 +180,60 @@ button {
   cursor: pointer;
   font-weight: 700;
   padding: 10px 14px;
+  min-height: 44px;
 }
 
 button.secondary {
   background: rgba(103, 193, 245, 0.14);
   color: #d8edf9;
+}
+
+@media (max-width: 520px) {
+  .shell {
+    display: block;
+  }
+
+  .panel {
+    min-height: calc(100dvh - 24px);
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .status {
+    white-space: normal;
+  }
+
+  .settings-group summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  .settings-group summary:after {
+    margin-left: auto;
+    float: none;
+  }
+
+  .toggle {
+    grid-template-columns: 24px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  button {
+    width: 100%;
+  }
 }

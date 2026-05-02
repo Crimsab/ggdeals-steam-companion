@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 2.1.1 - 2026-05-02
+
+- Fix compact layout responsiveness on Steam mobile and Big Picture style viewports.
+- Keep the settings panel clickable above overlapping Steam purchase blocks.
+- Add Playwright visual checks for desktop, mobile, Big Picture, and expanded settings states.
+
 ## 2.1.0 - 2026-05-01
 
 - Use the new GG.deals API price endpoints for Steam packages and bundles.

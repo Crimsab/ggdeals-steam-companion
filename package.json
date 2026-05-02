@@ -1,10 +1,11 @@
 {
   "name": "ggdeals-steam-companion",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "private": true,
   "type": "module",
   "scripts": {
     "build:extension": "bun scripts/build-extension.ts",
+    "check:visual": "bun scripts/visual-responsive-check.ts",
     "lint": "node --check userscript.user.js",
     "release:version": "bun scripts/release-version.ts",
     "release:verify": "bun scripts/verify-release-version.ts",
@@ -17,6 +18,7 @@
     "@types/chrome": "^0.1.40",
     "jsdom": "^27.3.0",
     "jszip": "^3.10.1",
+    "playwright": "^1.59.1",
     "sharp": "^0.34.5",
     "typescript": "^6.0.3"
   }

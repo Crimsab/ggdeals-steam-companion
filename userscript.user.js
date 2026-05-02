@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GG.deals Steam Companion
 // @namespace    http://tampermonkey.net/
-// @version      2.1.0
+// @version      2.1.1
 // @description  Shows lowest price from gg.deals on Steam game pages
 // @author       Crimsab
 // @license      GPL-3.0-or-later
@@ -84,6 +84,8 @@
             max-width: 100%;
             box-sizing: border-box;
             clear: both;
+            container-type: inline-size;
+            container-name: gg-deals;
         }
         .gg-deals-container.compact {
             padding: 10px;
@@ -99,8 +101,9 @@
             align-items: center;
             gap: 15px;
             padding: 5px;
-            flex-wrap: nowrap;
+            flex-wrap: wrap;
             min-width: 0;
+            max-width: 100%;
         }
         .gg-deals-container.compact .gg-compact-row {
             display: flex;
@@ -109,9 +112,10 @@
             display: flex;
             align-items: center;
             gap: 20px;
-            flex: 1;
+            flex: 1 1 260px;
             min-width: 0;
             overflow: visible;
+            max-width: 100%;
         }
         .gg-compact-price-item {
             display: flex;
@@ -120,6 +124,7 @@
             gap: 8px;
             min-width: 0;
             flex-shrink: 1;
+            max-width: 100%;
         }
         .gg-compact-price-item .gg-price-value {
             font-size: 18px;
@@ -183,7 +188,8 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            flex-shrink: 0;
+            flex: 1 1 180px;
+            min-width: 0;
         }
         .gg-tooltip {
             position: relative;
@@ -331,6 +337,7 @@
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
             transition: color 0.3s ease;
             white-space: nowrap;
+            max-width: 100%;
         }
         .gg-price-value.historical {
             font-size: 13px;
@@ -364,6 +371,7 @@
             text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
             text-align: center;
             white-space: nowrap;
+            box-sizing: border-box;
         }
         .gg-view-offers:hover {
             background: var(--gg-deals-button-bg, linear-gradient(to right, #7dcbff 0%, #4a9bd5 100%));
@@ -511,6 +519,7 @@
             display: inline-block;
             text-align: center;
             transition: transform 0.2s ease;
+            max-width: 100%;
         }
         .gg-view-offers:hover {
             transform: translateY(-1px);
@@ -522,8 +531,197 @@
         .gg-deals-container.compact .gg-view-offers {
             width: auto;
             min-width: 90px;
+            max-width: 260px;
             white-space: nowrap;
             flex-shrink: 0;
+        }
+
+        @media (max-width: 720px) {
+            .gg-deals-container {
+                margin: 12px 0;
+                padding: 10px;
+                overflow: visible;
+            }
+            .gg-deals-container.compact {
+                padding: 10px;
+            }
+            .gg-deals-container.compact .gg-compact-row {
+                display: grid;
+                grid-template-columns: 28px minmax(0, 1fr);
+                align-items: start;
+                gap: 10px;
+                padding: 0;
+                width: 100%;
+            }
+            .gg-deals-container.compact .gg-icon {
+                width: 24px;
+                height: 24px;
+                margin-top: 2px;
+            }
+            .gg-deals-container.compact .gg-compact-prices {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 6px;
+                width: 100%;
+            }
+            .gg-deals-container.compact .gg-compact-price-item {
+                display: grid;
+                grid-template-columns: minmax(64px, max-content) minmax(0, 1fr);
+                align-items: baseline;
+                gap: 6px;
+                width: 100%;
+                line-height: 1.2;
+                font-size: clamp(15px, 4vw, 19px);
+            }
+            .gg-deals-container.compact .gg-compact-price-item span:first-child {
+                white-space: nowrap;
+            }
+            .gg-deals-container.compact .gg-compact-price-item .gg-price-value {
+                min-width: 0;
+                font-size: clamp(16px, 5vw, 21px);
+                line-height: 1.15;
+                white-space: normal;
+                overflow-wrap: anywhere;
+                word-break: normal;
+            }
+            .gg-deals-container.compact .gg-compact-controls {
+                grid-column: 1 / -1;
+                display: grid;
+                grid-template-columns: 44px 44px minmax(150px, 260px);
+                align-items: stretch;
+                gap: 8px;
+                width: 100%;
+                justify-content: start;
+            }
+            .gg-deals-container.compact .gg-icon-button,
+            .gg-deals-container.compact .gg-settings-icon {
+                min-width: 44px;
+                min-height: 44px;
+                justify-content: center;
+            }
+            .gg-deals-container.compact .gg-view-offers {
+                width: min(260px, 100%);
+                min-width: 0;
+                max-width: 260px;
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 10px 12px;
+                font-size: clamp(14px, 4vw, 18px);
+                white-space: normal;
+                line-height: 1.2;
+            }
+            .gg-settings-content {
+                position: absolute !important;
+                right: 0 !important;
+                left: auto !important;
+                top: calc(100% + 8px) !important;
+                width: min(320px, calc(100vw - 24px)) !important;
+                min-width: 0 !important;
+                max-width: min(320px, calc(100vw - 24px)) !important;
+                max-height: min(70dvh, 520px);
+                overflow-y: auto;
+                overscroll-behavior: contain;
+            }
+            .gg-color-grid {
+                grid-template-columns: 1fr;
+            }
+            .gg-tooltip-text,
+            .gg-historical-tooltip-text {
+                max-width: calc(100vw - 32px);
+                white-space: normal;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .gg-deals-container.compact .gg-compact-row {
+                grid-template-columns: 1fr;
+            }
+            .gg-deals-container.compact .gg-icon {
+                display: none;
+            }
+            .gg-deals-container.compact .gg-compact-controls {
+                grid-template-columns: 44px 44px minmax(150px, 1fr);
+            }
+            .gg-deals-container.compact .gg-view-offers {
+                grid-column: 1 / -1;
+                width: 100%;
+                max-width: none;
+            }
+        }
+
+        @container gg-deals (max-width: 720px) {
+            .gg-deals-container.compact .gg-compact-row {
+                display: grid;
+                grid-template-columns: 28px minmax(0, 1fr);
+                align-items: start;
+                gap: 10px;
+                padding: 0;
+                width: 100%;
+            }
+            .gg-deals-container.compact .gg-compact-prices {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 6px;
+                width: 100%;
+            }
+            .gg-deals-container.compact .gg-compact-price-item {
+                display: grid;
+                grid-template-columns: minmax(64px, max-content) minmax(0, 1fr);
+                align-items: baseline;
+                gap: 6px;
+                width: 100%;
+                line-height: 1.2;
+                font-size: clamp(15px, 4cqw, 19px);
+            }
+            .gg-deals-container.compact .gg-compact-price-item .gg-price-value {
+                min-width: 0;
+                font-size: clamp(16px, 5cqw, 21px);
+                line-height: 1.15;
+                white-space: normal;
+                overflow-wrap: anywhere;
+            }
+            .gg-deals-container.compact .gg-compact-controls {
+                grid-column: 1 / -1;
+                display: grid;
+                grid-template-columns: 44px 44px minmax(150px, 260px);
+                align-items: stretch;
+                gap: 8px;
+                width: 100%;
+                justify-content: start;
+            }
+            .gg-deals-container.compact .gg-view-offers {
+                width: min(260px, 100%);
+                min-width: 0;
+                max-width: 260px;
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                white-space: normal;
+            }
+        }
+
+        @container gg-deals (min-width: 520px) and (max-width: 720px) {
+            .gg-deals-container.compact .gg-compact-row {
+                grid-template-columns: 28px minmax(180px, 0.8fr) minmax(260px, 1.2fr);
+                align-items: center;
+            }
+            .gg-deals-container.compact .gg-compact-prices {
+                grid-column: 2;
+            }
+            .gg-deals-container.compact .gg-compact-controls {
+                grid-column: 3;
+                grid-row: 1;
+                grid-template-columns: 44px 44px minmax(160px, 260px);
+                align-items: center;
+                justify-content: end;
+            }
+            .gg-deals-container.compact .gg-view-offers {
+                min-height: 44px;
+                font-size: clamp(14px, 3.5cqw, 18px);
+            }
         }
         .gg-api-key-input {
             width: 100%;
@@ -741,6 +939,267 @@
         margin-bottom: 12px;
         font-weight: bold;
         color: var(--gg-deals-official-text); 
+    }
+
+    @media (max-width: 720px) {
+        .gg-title {
+            font-size: clamp(18px, 5vw, 24px);
+            line-height: 1.15;
+            flex-wrap: wrap;
+            justify-content: center;
+            text-wrap: balance;
+        }
+        .gg-deals-container:not(.compact) .gg-main-actions {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 44px;
+            gap: 8px;
+        }
+        .gg-deals-container:not(.compact) .gg-main-actions .gg-view-offers {
+            width: 100%;
+            min-width: 0;
+            white-space: normal;
+        }
+        .gg-deals-container:not(.compact) .gg-settings-panels {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        .gg-settings-content {
+            position: absolute !important;
+            right: 0 !important;
+            left: auto !important;
+            top: calc(100% + 8px) !important;
+            width: min(320px, calc(100vw - 24px)) !important;
+            min-width: 0 !important;
+            max-width: min(320px, calc(100vw - 24px)) !important;
+            max-height: min(70dvh, 520px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+        .gg-price-label,
+        .gg-toggle {
+            white-space: normal;
+        }
+        .gg-price-value {
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+    }
+
+    /* Final compact responsive layout overrides. Keep these last so older layout
+       rules cannot re-expand the CTA or misalign touch controls. */
+    .gg-deals-container {
+        position: relative !important;
+        isolation: isolate !important;
+    }
+    .gg-deals-container.gg-settings-open {
+        z-index: 2147483000 !important;
+    }
+    .gg-deals-container.compact .gg-settings-content.show {
+        z-index: 2147483001 !important;
+    }
+    .gg-deals-container.compact .gg-compact-row {
+        display: grid !important;
+        grid-template-columns: 24px minmax(0, 1fr) max-content;
+        align-items: center !important;
+        gap: 12px !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+    .gg-deals-container.compact .gg-compact-prices {
+        display: flex !important;
+        align-items: center !important;
+        gap: 20px !important;
+        min-width: 0 !important;
+        width: 100% !important;
+    }
+    .gg-deals-container.compact .gg-compact-price-item {
+        display: flex !important;
+        align-items: baseline !important;
+        gap: 7px !important;
+        min-width: 0 !important;
+        line-height: 1.15 !important;
+    }
+    .gg-deals-container.compact .gg-compact-price-item .gg-price-value {
+        min-width: 0 !important;
+        font-size: clamp(16px, 1.8vw, 20px) !important;
+        line-height: 1.1 !important;
+        white-space: nowrap !important;
+    }
+    .gg-deals-container.compact .gg-compact-controls {
+        display: grid !important;
+        grid-template-columns: 40px 40px max-content !important;
+        align-items: center !important;
+        justify-content: end !important;
+        gap: 8px !important;
+        width: auto !important;
+        min-width: 0 !important;
+    }
+    .gg-deals-container.compact .gg-settings-dropdown {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 40px !important;
+        height: 40px !important;
+    }
+    .gg-deals-container.compact .gg-icon-button,
+    .gg-deals-container.compact .gg-settings-icon {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    .gg-deals-container.compact .gg-view-offers {
+        width: auto !important;
+        min-width: 118px !important;
+        max-width: 180px !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        padding: 0 18px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 14px !important;
+        line-height: 1.1 !important;
+        white-space: nowrap !important;
+    }
+
+    @media (max-width: 720px) {
+        .gg-deals-container.compact .gg-compact-row {
+            grid-template-columns: 30px minmax(0, 1fr) !important;
+            gap: 10px !important;
+            align-items: start !important;
+        }
+        .gg-deals-container.compact .gg-icon {
+            display: block !important;
+            width: 26px !important;
+            height: 26px !important;
+            margin-top: 2px !important;
+            grid-column: 1 !important;
+            grid-row: 1 !important;
+        }
+        .gg-deals-container.compact .gg-compact-prices {
+            grid-column: 2 !important;
+            grid-row: 1 !important;
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 5px !important;
+        }
+        .gg-deals-container.compact .gg-compact-price-item {
+            display: grid !important;
+            grid-template-columns: max-content minmax(0, max-content) !important;
+            gap: 7px !important;
+        }
+        .gg-deals-container.compact .gg-compact-price-item .gg-price-value {
+            font-size: clamp(17px, 5vw, 22px) !important;
+        }
+        .gg-deals-container.compact .gg-compact-controls {
+            grid-column: 1 / -1 !important;
+            grid-row: 2 !important;
+            grid-template-columns: 44px 44px minmax(0, 1fr) !important;
+            gap: 8px !important;
+            width: 100% !important;
+            justify-content: stretch !important;
+            margin-top: 4px !important;
+        }
+        .gg-deals-container.compact .gg-icon-button,
+        .gg-deals-container.compact .gg-settings-icon {
+            width: 44px !important;
+            height: 44px !important;
+            min-width: 44px !important;
+            min-height: 44px !important;
+        }
+        .gg-deals-container.compact .gg-view-offers {
+            grid-column: 3 !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: none !important;
+            height: 44px !important;
+            min-height: 44px !important;
+        }
+        .gg-deals-container.compact .gg-settings-dropdown {
+            display: contents !important;
+            position: static !important;
+        }
+        .gg-deals-container.compact .gg-refresh {
+            order: 1 !important;
+        }
+        .gg-deals-container.compact .gg-settings-icon {
+            order: 2 !important;
+        }
+        .gg-deals-container.compact .gg-view-offers {
+            order: 3 !important;
+        }
+        .gg-deals-container.compact .gg-settings-content {
+            order: 4 !important;
+            grid-column: 1 / -1 !important;
+            position: relative !important;
+            inset: auto !important;
+            top: auto !important;
+            right: auto !important;
+            bottom: auto !important;
+            left: auto !important;
+            transform: none !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: none !important;
+            max-height: min(60dvh, 480px) !important;
+            margin-top: 4px !important;
+            overflow-y: auto !important;
+            overscroll-behavior: contain !important;
+            box-sizing: border-box !important;
+            z-index: 2147483001 !important;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .gg-deals-container.compact .gg-compact-row {
+            grid-template-columns: 30px minmax(0, 1fr) !important;
+            align-items: start !important;
+        }
+        .gg-deals-container.compact .gg-icon {
+            display: block !important;
+            width: 26px !important;
+            height: 26px !important;
+            margin-top: 2px !important;
+            grid-column: 1 !important;
+        }
+        .gg-deals-container.compact .gg-compact-prices {
+            grid-column: 2 !important;
+            gap: 6px !important;
+        }
+        .gg-deals-container.compact .gg-compact-price-item {
+            grid-template-columns: max-content minmax(0, 1fr) !important;
+            gap: 7px !important;
+        }
+        .gg-deals-container.compact .gg-compact-controls {
+            grid-column: 1 / -1 !important;
+            grid-template-columns: 44px 44px minmax(0, 1fr) !important;
+            width: 100% !important;
+            justify-content: stretch !important;
+            margin-top: 4px !important;
+        }
+        .gg-deals-container.compact .gg-view-offers {
+            grid-column: 3 !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: none !important;
+        }
+    }
+
+    @media (max-width: 340px) {
+        .gg-deals-container.compact .gg-compact-controls {
+            grid-template-columns: 40px 40px minmax(0, 1fr) !important;
+            width: 100% !important;
+        }
+        .gg-deals-container.compact .gg-view-offers {
+            width: 100% !important;
+            max-width: none !important;
+        }
     }
     /* End of new styles */
     `);
@@ -1907,12 +2366,14 @@
     settingsIcon.addEventListener("click", (e) => {
       e.stopPropagation();
       settingsContent.classList.toggle("show");
+      container.classList.toggle("gg-settings-open", settingsContent.classList.contains("show"));
     });
 
     // Close settings dropdown when clicking outside
     document.addEventListener("click", (e) => {
       if (!settingsContent.contains(e.target) && !settingsIcon.contains(e.target)) {
         settingsContent.classList.remove("show");
+        container.classList.remove("gg-settings-open");
       }
     });
 
